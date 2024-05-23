@@ -1,7 +1,7 @@
 use super::UseCase;
 use crate::{
     domain::{Status, Task},
-    repo::TaskRepo,
+    repo::{StoryRepo, TaskRepo},
     Result,
 };
 use std::sync::Arc;
@@ -29,13 +29,16 @@ pub struct TaskService {
 
 impl TaskService {
     /// Create a new task service
-    pub fn new(repo: Arc<TaskRepo>) -> Self {
+    pub fn new(repo: Arc<TaskRepo>, story_repo: Arc<StoryRepo>) -> Self {
         Self {
             create_task: CreateTask { repo: repo.clone() },
             delete_task: DeleteTask { repo: repo.clone() },
             get_task: GetTask { repo: repo.clone() },
-            get_tasks: GetTasks { repo: repo.clone() },
-            update_task: UpdateTask { repo },
+            update_task: UpdateTask { repo: repo.clone() },
+            get_tasks: GetTasks {
+                story_repo,
+                task_repo: repo,
+            },
         }
     }
 

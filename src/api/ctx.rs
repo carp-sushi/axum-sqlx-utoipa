@@ -25,8 +25,8 @@ impl Ctx {
         let task_repo = Arc::new(TaskRepo::new(db));
 
         // Services
+        let task_service = TaskService::new(task_repo, story_repo.clone());
         let story_service = StoryService::new(story_repo);
-        let task_service = TaskService::new(task_repo);
 
         // Ctx
         Self {
