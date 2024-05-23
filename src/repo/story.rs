@@ -36,7 +36,7 @@ impl StoryRepo {
 impl StoryRepo {
     /// Select a story by id
     pub async fn fetch(&self, id: i32) -> Result<Story> {
-        tracing::debug!("fetch: {}", id);
+        tracing::debug!("fetch: id={}", id);
 
         let q = sqlx::query_as("SELECT id, name FROM stories WHERE id = $1");
         let maybe_story = q.bind(id).fetch_optional(self.db_ref()).await?;
@@ -49,12 +49,15 @@ impl StoryRepo {
         }
     }
 
-    /// Select the 100 most recently created stories.
-    pub async fn list_recent(&self) -> Result<Vec<Story>> {
-        tracing::debug!("fetch_all");
+    /// Select a page of stories.
+    pub async fn list(&self, page_id: i32) -> Result<Vec<Story>> {
+        tracing::debug!("list: page_id={}", page_id);
 
-        let q = sqlx::query("SELECT id, name FROM stories ORDER BY id desc LIMIT 100");
-        let mut result_set = q.fetch(self.db_ref());
+        let q = sqlx::query(
+            r#"SELECT id, name FROM stories WHERE id <= $1
+            ORDER BY id desc LIMIT 100"#,
+        );
+        let mut result_set = q.bind(page_id).fetch(self.db_ref());
 
         let mut result = Vec::with_capacity(100);
         while let Some(row) = result_set.try_next().await? {
@@ -67,7 +70,7 @@ impl StoryRepo {
 
     /// Insert a new story
     pub async fn create(&self, name: String) -> Result<Story> {
-        tracing::debug!("create: {}", name);
+        tracing::debug!("create: name={}", name);
 
         let sql = "INSERT INTO stories (name) VALUES ($1) RETURNING id, name";
         let q = sqlx::query_as(sql);
@@ -78,7 +81,7 @@ impl StoryRepo {
 
     /// Update story name
     pub async fn update(&self, id: i32, name: String) -> Result<Story> {
-        tracing::debug!("update_story: {}, {}", id, name);
+        tracing::debug!("update: id={}, name={}", id, name);
 
         let q = sqlx::query_as("UPDATE stories SET name = $1 WHERE id = $2 RETURNING id, name");
         let story = q.bind(name).bind(id).fetch_one(self.db_ref()).await?;
@@ -88,7 +91,7 @@ impl StoryRepo {
 
     /// Delete a story and its tasks.
     pub async fn delete(&self, id: i32) -> Result<u64> {
-        tracing::debug!("delete_story: {}", id);
+        tracing::debug!("delete: id={}", id);
 
         let mut tx = self.db.begin().await?;
 
@@ -130,7 +133,7 @@ mod tests {
         assert_eq!(name, story.name);
 
         // Query stories
-        let stories = story_repo.list_recent().await.unwrap();
+        let stories = story_repo.list(std::i32::MAX).await.unwrap();
         assert_eq!(stories.len(), 1);
 
         // Delete the story
@@ -138,7 +141,7 @@ mod tests {
         assert_eq!(rows_updated, 1);
 
         // Assert story was deleted
-        let stories = story_repo.list_recent().await.unwrap();
+        let stories = story_repo.list(std::i32::MAX).await.unwrap();
         assert!(stories.is_empty());
     }
 }

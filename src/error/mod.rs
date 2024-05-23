@@ -17,3 +17,26 @@ pub enum Error {
     #[error("not found error: {message}")]
     NotFound { message: String },
 }
+
+// Error helpers
+impl Error {
+    pub fn internal(message: String) -> Self {
+        Error::Internal { message }
+    }
+
+    pub fn not_found(message: String) -> Self {
+        Error::NotFound { message }
+    }
+
+    pub fn invalid_args(message: &str) -> Self {
+        Error::InvalidArgs {
+            messages: vec![message.into()],
+        }
+    }
+}
+
+impl From<base64::DecodeError> for Error {
+    fn from(err: base64::DecodeError) -> Self {
+        Error::internal(err.to_string())
+    }
+}

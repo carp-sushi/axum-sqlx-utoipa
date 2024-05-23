@@ -53,8 +53,8 @@ impl StoryService {
     }
 
     /// Get recent stories
-    pub async fn list(&self) -> Result<Vec<Story>> {
-        self.get_stories.execute(()).await
+    pub async fn list(&self, page_id: i32) -> Result<(i32, Vec<Story>)> {
+        self.get_stories.execute(page_id).await
     }
 
     /// Update a story

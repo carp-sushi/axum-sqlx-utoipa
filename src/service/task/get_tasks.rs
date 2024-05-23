@@ -17,6 +17,6 @@ impl UseCase for GetTasks {
 
     /// Get all tasks for a story.
     async fn execute(&self, story_id: Self::Req) -> Self::Rep {
-        self.repo.fetch_all(story_id).await
+        self.repo.list(story_id).await
     }
 }

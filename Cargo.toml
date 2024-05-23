@@ -11,6 +11,9 @@ axum = { version = "0.7", default-features = false, features = [
     "http1",
     "tokio",
 ] }
+base64 = "0.22"
+borsh = { version = "1", features = ["derive"] }
+borsh-derive = "1"
 dotenvy = "0.15"
 futures-util = "0.3"
 mimalloc = { version = "0.1", default-features = false }

@@ -1,10 +1,14 @@
 use crate::{
-    api::{dto::StoryBody, Ctx},
+    api::{
+        dto::StoryBody,
+        page::{Page, PageParams, PageToken},
+        Ctx,
+    },
     domain::{Story, Task},
     Result,
 };
 use axum::{
-    extract::{Path, State},
+    extract::{Path, Query, State},
     http::StatusCode,
     response::IntoResponse,
     routing::get,
@@ -31,14 +35,20 @@ async fn get_story(Path(id): Path<i32>, State(ctx): State<Arc<Ctx>>) -> Result<J
     Ok(Json(story))
 }
 
-/// Get stories by owner
-async fn get_stories(State(ctx): State<Arc<Ctx>>) -> Result<Json<Vec<Story>>> {
+/// Get a page of stories
+async fn get_stories(
+    params: Option<Query<PageParams>>,
+    State(ctx): State<Arc<Ctx>>,
+) -> Result<impl IntoResponse> {
     tracing::info!("GET /stories");
-    let stories = ctx.story.list().await?;
-    Ok(Json(stories))
+    let q = params.unwrap_or_default();
+    let page = PageToken::decode(&q.page_token, std::i32::MAX)?;
+    let (next_page, stories) = ctx.story.list(page).await?;
+    let page = Page::new(PageToken::encode(next_page), stories);
+    Ok(Json(page))
 }
 
-/// Get tasks for a story
+/// Get all tasks for a story
 async fn get_tasks(
     Path(story_id): Path<i32>,
     State(ctx): State<Arc<Ctx>>,

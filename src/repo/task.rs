@@ -52,7 +52,7 @@ impl TaskRepo {
 impl TaskRepo {
     /// Get a task by id
     pub async fn fetch(&self, id: i32) -> Result<Task> {
-        tracing::debug!("select_task: {}", id);
+        tracing::debug!("fetch: id={}", id);
 
         let q = sqlx::query_as("SELECT id, story_id, name, status FROM tasks WHERE id = $1");
         let task_option = q.bind(id).fetch_optional(self.db_ref()).await?;
@@ -66,11 +66,12 @@ impl TaskRepo {
     }
 
     /// Select tasks for a story
-    pub async fn fetch_all(&self, story_id: i32) -> Result<Vec<Task>> {
-        tracing::debug!("select_tasks: story: {}", story_id);
+    pub async fn list(&self, story_id: i32) -> Result<Vec<Task>> {
+        tracing::debug!("list: story_id={}", story_id);
 
         let q = sqlx::query(
-            "SELECT id, story_id, name, status FROM tasks WHERE story_id = $1 ORDER BY id",
+            r#"SELECT id, story_id, name, status FROM tasks WHERE story_id = $1
+            ORDER BY id LIMIT 1000"#,
         );
         let mut result_set = q.bind(story_id).fetch(self.db_ref());
 
@@ -85,7 +86,7 @@ impl TaskRepo {
 
     /// Insert a new task
     pub async fn create(&self, story_id: i32, name: String) -> Result<Task> {
-        tracing::debug!("insert_task: {}, {}", story_id, name);
+        tracing::debug!("create: story_id={}, name={}", story_id, name);
 
         let q = sqlx::query_as(
             r#"INSERT INTO tasks (story_id, name)
@@ -98,7 +99,7 @@ impl TaskRepo {
 
     /// Update task name and status.
     pub async fn update(&self, id: i32, name: String, status: Status) -> Result<Task> {
-        tracing::debug!("update_task: {}, {}, {}", id, name, status);
+        tracing::debug!("update: id={}, name={}, status={}", id, name, status);
 
         let q = sqlx::query_as(
             r#"UPDATE tasks SET name = $1, status = $2 WHERE id = $3
@@ -117,7 +118,7 @@ impl TaskRepo {
 
     /// Delete a task.
     pub async fn delete(&self, id: i32) -> Result<u64> {
-        tracing::debug!("delete_task: {}", id);
+        tracing::debug!("delete: id={}", id);
 
         let result = sqlx::query("DELETE FROM tasks WHERE id = $1")
             .bind(id)
@@ -173,7 +174,7 @@ mod tests {
         assert_eq!(task.status, Status::Complete);
 
         // Query tasks for story.
-        let tasks = task_repo.fetch_all(story_id.clone()).await.unwrap();
+        let tasks = task_repo.list(story_id.clone()).await.unwrap();
         assert_eq!(tasks.len(), 1);
 
         // Delete the task
@@ -181,7 +182,7 @@ mod tests {
         assert_eq!(updated_rows, 1);
 
         // Assert task was deleted
-        let tasks = task_repo.fetch_all(story_id.clone()).await.unwrap();
+        let tasks = task_repo.list(story_id.clone()).await.unwrap();
         assert!(tasks.is_empty());
 
         // Cleanup

@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 mod ctx;
 mod dto;
+mod page;
 mod story;
 mod task;
 
