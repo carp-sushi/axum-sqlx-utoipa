@@ -22,6 +22,8 @@ impl UseCase for UpdateTask {
 
     /// Update a task if it exists.
     async fn execute(&self, (id, name_opt, status_opt): Self::Req) -> Self::Rep {
+        tracing::debug!("execute: id={}", id);
+
         let existing = self.repo.fetch(id).await?;
         self.repo
             .update(

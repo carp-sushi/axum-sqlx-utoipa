@@ -17,6 +17,7 @@ impl UseCase for GetTask {
 
     /// Get a task
     async fn execute(&self, id: Self::Req) -> Self::Rep {
+        tracing::debug!("execute: id={}", id);
         self.repo.fetch(id).await
     }
 }

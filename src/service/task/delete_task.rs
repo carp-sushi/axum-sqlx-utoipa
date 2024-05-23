@@ -18,12 +18,16 @@ impl UseCase for DeleteTask {
 
     /// Delete a task.
     async fn execute(&self, id: Self::Req) -> Self::Rep {
+        tracing::debug!("execute: id={}", id);
+
         let rows = self
             .repo
             .fetch(id)
             .and_then(|_| self.repo.delete(id))
             .await?;
+
         tracing::debug!("deleted {} rows", rows);
+
         Ok(())
     }
 }

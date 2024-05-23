@@ -18,7 +18,7 @@ impl UseCase for CreateTask {
 
     /// Create a task
     async fn execute(&self, (story_id, name): Self::Req) -> Self::Rep {
-        tracing::debug!("execute: {}, {}", story_id, name);
+        tracing::debug!("execute: story_id={}, name={}", story_id, name);
         self.repo
             .fetch(story_id)
             .and_then(|_| self.repo.create(story_id, name))

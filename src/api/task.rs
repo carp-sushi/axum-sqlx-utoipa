@@ -14,7 +14,6 @@ use axum::{
     Json, Router,
 };
 use std::sync::Arc;
-use validator::Validate;
 
 /// API routes for tasks
 pub fn routes() -> Router<Arc<Ctx>> {
@@ -49,11 +48,8 @@ async fn update_task(
     Json(body): Json<PatchTaskBody>,
 ) -> Result<Json<Task>> {
     tracing::info!("PATCH /tasks/{}", id);
-    body.validate()?;
-    let task = ctx
-        .task
-        .update(id, body.name.clone(), body.get_status())
-        .await?;
+    let (name, status) = body.validate()?;
+    let task = ctx.task.update(id, name, status).await?;
     Ok(Json(task))
 }
 

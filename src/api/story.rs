@@ -15,7 +15,6 @@ use axum::{
     Json, Router,
 };
 use std::sync::Arc;
-use validator::Validate;
 
 /// API routes for stories
 pub fn routes() -> Router<Arc<Ctx>> {
@@ -64,8 +63,8 @@ async fn create_story(
     Json(body): Json<StoryBody>,
 ) -> Result<impl IntoResponse> {
     tracing::info!("POST /stories");
-    body.validate()?;
-    let story = ctx.story.create(body.name).await?;
+    let name = body.validate()?;
+    let story = ctx.story.create(name).await?;
     Ok((StatusCode::CREATED, Json(story)))
 }
 
@@ -76,8 +75,8 @@ async fn update_story(
     Json(body): Json<StoryBody>,
 ) -> Result<Json<Story>> {
     tracing::info!("PATCH /stories/{}", id);
-    body.validate()?;
-    let story = ctx.story.update(id, body.name).await?;
+    let name = body.validate()?;
+    let story = ctx.story.update(id, name).await?;
     Ok(Json(story))
 }
 

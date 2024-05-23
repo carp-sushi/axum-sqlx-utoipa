@@ -3,9 +3,6 @@ use serde::Serialize;
 // Http support for errors
 mod http;
 
-// Validation support for errors
-mod validate;
-
 /// Project level error type
 #[derive(thiserror::Error, Debug, Serialize)]
 #[serde(rename_all = "snake_case")]

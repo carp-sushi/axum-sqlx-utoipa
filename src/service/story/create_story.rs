@@ -17,6 +17,7 @@ impl UseCase for CreateStory {
 
     /// Create a story
     async fn execute(&self, name: String) -> Result<Story> {
+        tracing::debug!("execute: name={}", name);
         self.repo.create(name).await
     }
 }

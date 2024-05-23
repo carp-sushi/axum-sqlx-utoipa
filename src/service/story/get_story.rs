@@ -17,6 +17,7 @@ impl UseCase for GetStory {
 
     /// Get a story if it exists
     async fn execute(&self, id: i32) -> Result<Story> {
+        tracing::debug!("execute: id={}", id);
         self.repo.fetch(id).await
     }
 }

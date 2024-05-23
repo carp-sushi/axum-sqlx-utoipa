@@ -17,6 +17,7 @@ impl UseCase for GetTasks {
 
     /// Get all tasks for a story.
     async fn execute(&self, story_id: Self::Req) -> Self::Rep {
+        tracing::debug!("execute: story_id={}", story_id);
         self.repo.list(story_id).await
     }
 }

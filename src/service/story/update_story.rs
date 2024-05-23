@@ -18,6 +18,7 @@ impl UseCase for UpdateStory {
 
     /// Update a story if it exists.
     async fn execute(&self, (id, name): Self::Req) -> Self::Rep {
+        tracing::debug!("execute: id={}, name={}", id, name);
         self.repo
             .fetch(id)
             .and_then(|_| self.repo.update(id, name))

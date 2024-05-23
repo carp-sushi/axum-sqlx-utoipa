@@ -18,7 +18,7 @@ use get_task::GetTask;
 use get_tasks::GetTasks;
 use update_task::UpdateTask;
 
-/// Aggregates task services into a unified api.
+/// Aggregates task use cases into a unified api.
 pub struct TaskService {
     create_task: CreateTask,
     delete_task: DeleteTask,

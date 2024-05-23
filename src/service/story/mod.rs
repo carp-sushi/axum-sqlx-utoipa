@@ -16,7 +16,7 @@ use get_stories::GetStories;
 use get_story::GetStory;
 use update_story::UpdateStory;
 
-/// Aggregates story services into a unified api.
+/// Aggregates story use cases into a unified api.
 pub struct StoryService {
     create_story: CreateStory,
     delete_story: DeleteStory,
