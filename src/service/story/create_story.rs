@@ -1,21 +1,14 @@
-use crate::{domain::Story, repo::StoryRepo, service::Service, Result};
+use crate::{domain::Story, repo::StoryRepo, service::UseCase, Result};
 use async_trait::async_trait;
 use std::sync::Arc;
 
 /// Create new stories.
 pub struct CreateStory {
-    repo: Arc<StoryRepo>,
-}
-
-impl CreateStory {
-    /// Create a new service for creating stories.
-    pub fn new(repo: Arc<StoryRepo>) -> Self {
-        Self { repo }
-    }
+    pub repo: Arc<StoryRepo>,
 }
 
 #[async_trait]
-impl Service for CreateStory {
+impl UseCase for CreateStory {
     /// Input is a story name
     type Req = String;
 
@@ -23,7 +16,7 @@ impl Service for CreateStory {
     type Rep = Result<Story>;
 
     /// Create a story
-    async fn call(&self, name: String) -> Result<Story> {
+    async fn execute(&self, name: String) -> Result<Story> {
         self.repo.create(name).await
     }
 }

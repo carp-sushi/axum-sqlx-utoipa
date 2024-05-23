@@ -33,7 +33,7 @@ mod tests {
         );
 
         let pool = PgPoolOptions::new()
-            .max_connections(2)
+            .max_connections(1)
             .min_connections(1)
             .connect(&connection_string)
             .await

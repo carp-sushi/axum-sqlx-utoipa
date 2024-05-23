@@ -10,7 +10,7 @@ pub mod task;
 /// Inspired by Finagle's Service type: `trait Service[Req, Rep] extends (Req => Future[Rep])`
 /// TODO: Look at using `Fn` (requires unstable feature "fn_traits").
 #[async_trait]
-pub trait Service: Sized + Send + Sync + 'static {
+pub trait UseCase: Sized + Send + Sync + 'static {
     /// Input arguments
     type Req: Send + 'static;
 
@@ -18,5 +18,5 @@ pub trait Service: Sized + Send + Sync + 'static {
     type Rep: Send + 'static;
 
     /// Business logic
-    async fn call(&self, req: Self::Req) -> Self::Rep;
+    async fn execute(&self, req: Self::Req) -> Self::Rep;
 }

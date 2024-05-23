@@ -1,21 +1,14 @@
-use crate::{domain::Task, repo::TaskRepo, service::Service, Result};
+use crate::{domain::Task, repo::TaskRepo, service::UseCase, Result};
 use async_trait::async_trait;
 use std::sync::Arc;
 
 /// Get tasks by id.
 pub struct GetTask {
-    repo: Arc<TaskRepo>,
-}
-
-impl GetTask {
-    /// Create a new service for getting tasks by id.
-    pub fn new(repo: Arc<TaskRepo>) -> Self {
-        Self { repo }
-    }
+    pub repo: Arc<TaskRepo>,
 }
 
 #[async_trait]
-impl Service for GetTask {
+impl UseCase for GetTask {
     /// Input is a task id
     type Req = i32;
 
@@ -23,7 +16,7 @@ impl Service for GetTask {
     type Rep = Result<Task>;
 
     /// Get a task
-    async fn call(&self, id: Self::Req) -> Self::Rep {
+    async fn execute(&self, id: Self::Req) -> Self::Rep {
         self.repo.fetch(id).await
     }
 }
