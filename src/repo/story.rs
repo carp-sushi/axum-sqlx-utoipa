@@ -105,6 +105,21 @@ impl StoryRepo {
 
         Ok(r1.rows_affected() + r2.rows_affected())
     }
+
+    /// Check whether a story exists.
+    pub async fn exists(&self, id: i32) -> bool {
+        tracing::debug!("exists: id={}", id);
+
+        let q = sqlx::query("SELECT EXISTS(SELECT 1 FROM stories WHERE id = $1)");
+        let result = q.bind(id).fetch_one(self.db_ref()).await;
+
+        if let Ok(row) = result {
+            let found: bool = row.try_get("exists").unwrap_or_default();
+            found
+        } else {
+            false
+        }
+    }
 }
 
 #[cfg(test)]
@@ -132,16 +147,26 @@ mod tests {
         let story = story_repo.create(name.clone()).await.unwrap();
         assert_eq!(name, story.name);
 
-        // Query stories
+        // Assert the story exists
+        assert!(story_repo.exists(story.id).await);
+
+        // Query stories page
         let stories = story_repo.list(std::i32::MAX).await.unwrap();
         assert_eq!(stories.len(), 1);
 
+        // Update the name
+        let updated_name = "Books".to_string();
+        story_repo.update(story.id, updated_name).await.unwrap();
+
+        // Fetch and verify new name
+        let story = story_repo.fetch(story.id).await.unwrap();
+        assert_eq!(story.name, "Books");
+
         // Delete the story
-        let rows_updated = story_repo.delete(story.id).await.unwrap();
-        assert_eq!(rows_updated, 1);
+        let rows = story_repo.delete(story.id).await.unwrap();
+        assert_eq!(rows, 1);
 
         // Assert story was deleted
-        let stories = story_repo.list(std::i32::MAX).await.unwrap();
-        assert!(stories.is_empty());
+        assert!(!story_repo.exists(story.id).await);
     }
 }

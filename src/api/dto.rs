@@ -15,11 +15,11 @@ pub struct StoryBody {
 impl StoryBody {
     /// Sanitize and validate story name from request body
     pub fn validate(&self) -> Result<String> {
-        let name = self.name.trim();
+        let name = self.name.trim().to_string();
         if name.is_empty() || name.len() > MAX_NAME_LEN {
             return Err(Error::invalid_args("name: invalid length"));
         }
-        Ok(name.to_string())
+        Ok(name)
     }
 }
 
@@ -41,14 +41,14 @@ impl CreateTaskBody {
         if story_id <= 0 {
             messages.push("story_id: must be > 0".into());
         }
-        let name = self.name.trim();
+        let name = self.name.trim().to_string();
         if name.is_empty() || name.len() > MAX_NAME_LEN {
             messages.push("name: invalid length".into());
         }
 
         // Return params or errors
         if messages.is_empty() {
-            Ok((story_id, name.to_string()))
+            Ok((story_id, name))
         } else {
             Err(Error::InvalidArgs { messages })
         }

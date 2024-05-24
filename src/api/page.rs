@@ -46,10 +46,10 @@ impl PageToken {
         }
     }
 
-    /// Extract page id from encoded token param
-    pub fn decode(token_opt: &Option<String>, or_val: i32) -> Result<i32> {
+    /// Extract page id from encoded token param, falling back to a default value.
+    pub fn decode_or(token_opt: &Option<String>, default: i32) -> Result<i32> {
         match token_opt {
-            None => Ok(or_val),
+            None => Ok(default),
             Some(token) => {
                 let bytes = URL_SAFE.decode(token)?;
                 let page_token: PageToken = borsh::from_slice(&bytes)

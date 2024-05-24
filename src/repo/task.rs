@@ -127,6 +127,21 @@ impl TaskRepo {
 
         Ok(result.rows_affected())
     }
+
+    /// Check whether a task exists.
+    pub async fn exists(&self, id: i32) -> bool {
+        tracing::debug!("exists: id={}", id);
+
+        let q = sqlx::query("SELECT EXISTS(SELECT 1 FROM tasks WHERE id = $1)");
+        let result = q.bind(id).fetch_one(self.db_ref()).await;
+
+        if let Ok(row) = result {
+            let found: bool = row.try_get("exists").unwrap_or_default();
+            found
+        } else {
+            false
+        }
+    }
 }
 
 #[cfg(test)]
@@ -158,19 +173,24 @@ mod tests {
         let name = "Books To Read".to_string();
         let story_id = story_repo.create(name.clone()).await.unwrap().id;
 
-        // Create task, ensuring complete flag is false
-        let task_name = "Suttree".to_string();
+        // Create task, ensuring status is incomplete
         let task = task_repo
-            .create(story_id.clone(), task_name.clone())
+            .create(story_id.clone(), "Suttree".to_string())
             .await
             .unwrap();
         assert_eq!(task.status, Status::Incomplete);
 
-        // Complete task
-        let task = task_repo
+        // Assert task exists
+        assert!(task_repo.exists(task.id).await);
+
+        // Set task status to complete
+        task_repo
             .update(task.id, task.name, Status::Complete)
             .await
             .unwrap();
+
+        // Fetch task and assert status was updated
+        let task = task_repo.fetch(task.id).await.unwrap();
         assert_eq!(task.status, Status::Complete);
 
         // Query tasks for story.
@@ -178,14 +198,13 @@ mod tests {
         assert_eq!(tasks.len(), 1);
 
         // Delete the task
-        let updated_rows = task_repo.delete(task.id).await.unwrap();
-        assert_eq!(updated_rows, 1);
+        let rows = task_repo.delete(task.id).await.unwrap();
+        assert_eq!(rows, 1);
 
         // Assert task was deleted
-        let tasks = task_repo.list(story_id.clone()).await.unwrap();
-        assert!(tasks.is_empty());
+        assert!(!task_repo.exists(task.id).await);
 
         // Cleanup
-        story_repo.delete(story_id).await.unwrap();
+        assert!(story_repo.delete(story_id).await.unwrap() > 0);
     }
 }

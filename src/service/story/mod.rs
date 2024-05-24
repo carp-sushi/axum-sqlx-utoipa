@@ -2,14 +2,14 @@ use super::UseCase;
 use crate::{domain::Story, repo::StoryRepo, Result};
 use std::sync::Arc;
 
-// internal service mods
+// Use case mods
 mod create_story;
 mod delete_story;
 mod get_stories;
 mod get_story;
 mod update_story;
 
-// import services
+// Use cases
 use create_story::CreateStory;
 use delete_story::DeleteStory;
 use get_stories::GetStories;
@@ -52,7 +52,7 @@ impl StoryService {
         self.get_story.execute(id).await
     }
 
-    /// Get recent stories
+    /// Get a page of stories
     pub async fn list(&self, page_id: i32) -> Result<(i32, Vec<Story>)> {
         self.get_stories.execute(page_id).await
     }

@@ -41,8 +41,8 @@ async fn get_stories(
 ) -> Result<impl IntoResponse> {
     tracing::info!("GET /stories");
     let q = params.unwrap_or_default();
-    let page = PageToken::decode(&q.page_token, std::i32::MAX)?;
-    let (next_page, stories) = ctx.story.list(page).await?;
+    let page_id = PageToken::decode_or(&q.page_token, std::i32::MAX)?;
+    let (next_page, stories) = ctx.story.list(page_id).await?;
     let page = Page::new(PageToken::encode(next_page), stories);
     Ok(Json(page))
 }
