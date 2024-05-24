@@ -5,7 +5,6 @@ use crate::{
     Result,
 };
 use async_trait::async_trait;
-use futures_util::TryFutureExt;
 use std::sync::Arc;
 
 /// Get story tasks.
@@ -22,12 +21,18 @@ impl UseCase for GetTasks {
     /// Output is a vector of tasks
     type Rep = Result<Vec<Task>>;
 
-    /// Get all tasks for a story if it exists.
+    /// Get all tasks for a story if it exists. If the story does't exist,
+    /// return a `NotFound` error.
     async fn execute(&self, story_id: Self::Req) -> Self::Rep {
         tracing::debug!("execute: story_id={}", story_id);
-        self.story_repo
-            .fetch(story_id)
-            .and_then(|_| self.task_repo.list(story_id))
-            .await
+        // Try and query for tasks first.
+        let tasks = self.task_repo.list(story_id).await?;
+        // When no tasks were returned, check whether the story exists.
+        // This is an optimization; if tasks were returned, the story DOES exist
+        // and no further querying is required.
+        if tasks.is_empty() {
+            let _ = self.story_repo.fetch(story_id).await?;
+        }
+        Ok(tasks)
     }
 }
