@@ -33,9 +33,10 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 
 [dev-dependencies]
-testcontainers = "0.15"
-testcontainers-modules = { version = "0.3", features = ["postgres"] }
+testcontainers = "0.16"
+testcontainers-modules = { version = "0.4", features = ["postgres"] }
 
 [profile.release]
 codegen-units = 1
 lto = 'thin'
+panic = 'abort'

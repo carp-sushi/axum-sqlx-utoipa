@@ -16,7 +16,8 @@ use get_stories::GetStories;
 use get_story::GetStory;
 use update_story::UpdateStory;
 
-/// Aggregates story use cases into a unified api.
+/// A high-level API for managaing stories.
+/// This service is composed of (comprises) use cases.
 pub struct StoryService {
     create_story: CreateStory,
     delete_story: DeleteStory,

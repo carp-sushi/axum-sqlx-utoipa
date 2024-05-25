@@ -126,16 +126,15 @@ mod tests {
     use super::*;
     use crate::repo::tests;
 
-    use testcontainers::{clients::Cli, RunnableImage};
+    use testcontainers::{runners::AsyncRunner, RunnableImage};
     use testcontainers_modules::postgres::Postgres;
 
     #[ignore]
     #[tokio::test]
     async fn integration_test() {
         // Set up postgres test container backed repo
-        let docker = Cli::default();
         let image = RunnableImage::from(Postgres::default()).with_tag("16-alpine");
-        let container = docker.run(image);
+        let container = image.start().await;
         let pool = tests::setup_pg_pool(&container).await;
 
         // Set up repo under test

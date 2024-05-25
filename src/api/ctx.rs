@@ -24,7 +24,7 @@ impl Ctx {
         let story_repo = Arc::new(StoryRepo::new(db.clone()));
         let task_repo = Arc::new(TaskRepo::new(db));
 
-        // Services
+        // Services (organize/group use cases by domain).
         let task_service = TaskService::new(task_repo, story_repo.clone());
         let story_service = StoryService::new(story_repo);
 

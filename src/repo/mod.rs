@@ -22,14 +22,14 @@ mod tests {
     };
     use std::{path::Path, sync::Arc};
 
-    use testcontainers::Container;
+    use testcontainers::ContainerAsync as Container;
     use testcontainers_modules::postgres::Postgres;
 
     /// Given a running Postgres container, set up a connection pool and run migrations.
-    pub async fn setup_pg_pool<'a>(container: &Container<'a, Postgres>) -> Arc<PgPool> {
+    pub async fn setup_pg_pool(container: &Container<Postgres>) -> Arc<PgPool> {
         let connection_string = &format!(
             "postgres://postgres:postgres@localhost:{}/postgres",
-            container.get_host_port_ipv4(5432),
+            container.get_host_port_ipv4(5432).await,
         );
 
         let pool = PgPoolOptions::new()

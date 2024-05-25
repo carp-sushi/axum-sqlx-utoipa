@@ -20,7 +20,8 @@ use get_task::GetTask;
 use get_tasks::GetTasks;
 use update_task::UpdateTask;
 
-/// Aggregates task use cases into a unified api.
+/// A high-level API for managaing tasks.
+/// This service is composed of (comprises) use cases.
 pub struct TaskService {
     create_task: CreateTask,
     delete_task: DeleteTask,
