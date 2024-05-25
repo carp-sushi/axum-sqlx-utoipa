@@ -136,8 +136,7 @@ impl TaskRepo {
         let result = q.bind(id).fetch_one(self.db_ref()).await;
 
         if let Ok(row) = result {
-            let found: bool = row.try_get("exists").unwrap_or_default();
-            found
+            row.try_get::<bool, _>("exists").unwrap_or_default()
         } else {
             false
         }
