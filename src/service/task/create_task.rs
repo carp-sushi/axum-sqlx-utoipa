@@ -5,7 +5,14 @@ use std::sync::Arc;
 
 /// Create a new task.
 pub struct CreateTask {
-    pub repo: Arc<TaskRepo>,
+    task_repo: Arc<TaskRepo>,
+}
+
+impl CreateTask {
+    /// Constructor
+    pub fn new(task_repo: Arc<TaskRepo>) -> Self {
+        Self { task_repo }
+    }
 }
 
 #[async_trait]
@@ -19,9 +26,10 @@ impl UseCase for CreateTask {
     /// Create a task
     async fn execute(&self, (story_id, name): Self::Req) -> Self::Rep {
         tracing::debug!("execute: story_id={}, name={}", story_id, name);
-        self.repo
+
+        self.task_repo
             .fetch(story_id)
-            .and_then(|_| self.repo.create(story_id, name))
+            .and_then(|_| self.task_repo.create(story_id, name))
             .await
     }
 }

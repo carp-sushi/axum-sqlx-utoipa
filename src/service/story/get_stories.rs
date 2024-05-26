@@ -2,9 +2,16 @@ use crate::{domain::Story, repo::StoryRepo, service::UseCase, Result};
 use async_trait::async_trait;
 use std::sync::Arc;
 
-/// Get a list of recent stories.
+/// Get pages of stories.
 pub struct GetStories {
-    pub repo: Arc<StoryRepo>,
+    story_repo: Arc<StoryRepo>,
+}
+
+impl GetStories {
+    /// Constructor
+    pub fn new(story_repo: Arc<StoryRepo>) -> Self {
+        Self { story_repo }
+    }
 }
 
 #[async_trait]
@@ -19,7 +26,7 @@ impl UseCase for GetStories {
     async fn execute(&self, page_id: Self::Req) -> Self::Rep {
         tracing::debug!("execute: page_id={}", page_id);
 
-        let stories = self.repo.list(page_id).await?;
+        let stories = self.story_repo.list(page_id).await?;
         let next_page = stories.last().map(|s| s.id - 1).unwrap_or_default();
 
         Ok((next_page, stories))

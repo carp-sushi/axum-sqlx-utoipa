@@ -9,8 +9,18 @@ use std::sync::Arc;
 
 /// Get story tasks.
 pub struct GetTasks {
-    pub story_repo: Arc<StoryRepo>,
-    pub task_repo: Arc<TaskRepo>,
+    story_repo: Arc<StoryRepo>,
+    task_repo: Arc<TaskRepo>,
+}
+
+impl GetTasks {
+    /// Constructor
+    pub fn new(story_repo: Arc<StoryRepo>, task_repo: Arc<TaskRepo>) -> Self {
+        Self {
+            story_repo,
+            task_repo,
+        }
+    }
 }
 
 #[async_trait]
@@ -25,14 +35,17 @@ impl UseCase for GetTasks {
     /// return a `NotFound` error.
     async fn execute(&self, story_id: Self::Req) -> Self::Rep {
         tracing::debug!("execute: story_id={}", story_id);
+
         // Try and query for tasks first.
         let tasks = self.task_repo.list(story_id).await?;
-        // When no tasks were returned, check whether the story exists.
+
+        // When zero tasks were returned, check whether the story exists.
         // This is an optimization; if tasks were returned, the story DOES exist
         // and no further querying is required.
         if tasks.is_empty() {
             let _ = self.story_repo.fetch(story_id).await?;
         }
+
         Ok(tasks)
     }
 }

@@ -4,7 +4,14 @@ use std::sync::Arc;
 
 /// Get tasks by id.
 pub struct GetTask {
-    pub repo: Arc<TaskRepo>,
+    task_repo: Arc<TaskRepo>,
+}
+
+impl GetTask {
+    /// Constructor
+    pub fn new(task_repo: Arc<TaskRepo>) -> Self {
+        Self { task_repo }
+    }
 }
 
 #[async_trait]
@@ -18,6 +25,6 @@ impl UseCase for GetTask {
     /// Get a task
     async fn execute(&self, id: Self::Req) -> Self::Rep {
         tracing::debug!("execute: id={}", id);
-        self.repo.fetch(id).await
+        self.task_repo.fetch(id).await
     }
 }

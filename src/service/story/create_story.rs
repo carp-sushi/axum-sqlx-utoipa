@@ -4,7 +4,14 @@ use std::sync::Arc;
 
 /// Create new stories.
 pub struct CreateStory {
-    pub repo: Arc<StoryRepo>,
+    story_repo: Arc<StoryRepo>,
+}
+
+impl CreateStory {
+    /// Constructor
+    pub fn new(story_repo: Arc<StoryRepo>) -> Self {
+        Self { story_repo }
+    }
 }
 
 #[async_trait]
@@ -18,6 +25,6 @@ impl UseCase for CreateStory {
     /// Create a story
     async fn execute(&self, name: String) -> Result<Story> {
         tracing::debug!("execute: name={}", name);
-        self.repo.create(name).await
+        self.story_repo.create(name).await
     }
 }

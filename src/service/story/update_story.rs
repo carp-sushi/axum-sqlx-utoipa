@@ -5,7 +5,14 @@ use std::sync::Arc;
 
 /// Updates stories
 pub struct UpdateStory {
-    pub repo: Arc<StoryRepo>,
+    story_repo: Arc<StoryRepo>,
+}
+
+impl UpdateStory {
+    /// Constructor
+    pub fn new(story_repo: Arc<StoryRepo>) -> Self {
+        Self { story_repo }
+    }
 }
 
 #[async_trait]
@@ -19,9 +26,10 @@ impl UseCase for UpdateStory {
     /// Update a story if it exists.
     async fn execute(&self, (id, name): Self::Req) -> Self::Rep {
         tracing::debug!("execute: id={}, name={}", id, name);
-        self.repo
+
+        self.story_repo
             .fetch(id)
-            .and_then(|_| self.repo.update(id, name))
+            .and_then(|_| self.story_repo.update(id, name))
             .await
     }
 }

@@ -32,16 +32,13 @@ pub struct TaskService {
 
 impl TaskService {
     /// Create a new task service
-    pub fn new(repo: Arc<TaskRepo>, story_repo: Arc<StoryRepo>) -> Self {
+    pub fn new(task_repo: Arc<TaskRepo>, story_repo: Arc<StoryRepo>) -> Self {
         Self {
-            create_task: CreateTask { repo: repo.clone() },
-            delete_task: DeleteTask { repo: repo.clone() },
-            get_task: GetTask { repo: repo.clone() },
-            update_task: UpdateTask { repo: repo.clone() },
-            get_tasks: GetTasks {
-                story_repo,
-                task_repo: repo,
-            },
+            create_task: CreateTask::new(task_repo.clone()),
+            delete_task: DeleteTask::new(task_repo.clone()),
+            get_task: GetTask::new(task_repo.clone()),
+            update_task: UpdateTask::new(task_repo.clone()),
+            get_tasks: GetTasks::new(story_repo, task_repo),
         }
     }
 

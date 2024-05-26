@@ -4,7 +4,14 @@ use std::sync::Arc;
 
 /// Get stories by id.
 pub struct GetStory {
-    pub repo: Arc<StoryRepo>,
+    story_repo: Arc<StoryRepo>,
+}
+
+impl GetStory {
+    /// Constructor
+    pub fn new(story_repo: Arc<StoryRepo>) -> Self {
+        Self { story_repo }
+    }
 }
 
 #[async_trait]
@@ -18,6 +25,6 @@ impl UseCase for GetStory {
     /// Get a story if it exists
     async fn execute(&self, id: i32) -> Result<Story> {
         tracing::debug!("execute: id={}", id);
-        self.repo.fetch(id).await
+        self.story_repo.fetch(id).await
     }
 }

@@ -5,7 +5,14 @@ use std::sync::Arc;
 
 /// Delete stories by id.
 pub struct DeleteStory {
-    pub repo: Arc<StoryRepo>,
+    story_repo: Arc<StoryRepo>,
+}
+
+impl DeleteStory {
+    /// Constructor
+    pub fn new(story_repo: Arc<StoryRepo>) -> Self {
+        Self { story_repo }
+    }
 }
 
 #[async_trait]
@@ -20,14 +27,10 @@ impl UseCase for DeleteStory {
     async fn execute(&self, id: Self::Req) -> Self::Rep {
         tracing::debug!("execute: id={}", id);
 
-        let rows = self
-            .repo
+        self.story_repo
             .fetch(id)
-            .and_then(|_| self.repo.delete(id))
-            .await?;
-
-        tracing::debug!("deleted {} rows", rows);
-
-        Ok(())
+            .and_then(|_| self.story_repo.delete(id))
+            .await
+            .map(|_| ())
     }
 }

@@ -5,7 +5,14 @@ use std::sync::Arc;
 
 /// Delete a task by id.
 pub struct DeleteTask {
-    pub repo: Arc<TaskRepo>,
+    task_repo: Arc<TaskRepo>,
+}
+
+impl DeleteTask {
+    /// Constructor
+    pub fn new(task_repo: Arc<TaskRepo>) -> Self {
+        Self { task_repo }
+    }
 }
 
 #[async_trait]
@@ -20,14 +27,10 @@ impl UseCase for DeleteTask {
     async fn execute(&self, id: Self::Req) -> Self::Rep {
         tracing::debug!("execute: id={}", id);
 
-        let rows = self
-            .repo
+        self.task_repo
             .fetch(id)
-            .and_then(|_| self.repo.delete(id))
-            .await?;
-
-        tracing::debug!("deleted {} rows", rows);
-
-        Ok(())
+            .and_then(|_| self.task_repo.delete(id))
+            .await
+            .map(|_| ())
     }
 }

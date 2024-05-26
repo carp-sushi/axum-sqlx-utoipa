@@ -28,13 +28,13 @@ pub struct StoryService {
 
 impl StoryService {
     /// Create a new story service
-    pub fn new(repo: Arc<StoryRepo>) -> Self {
+    pub fn new(story_repo: Arc<StoryRepo>) -> Self {
         Self {
-            create_story: CreateStory { repo: repo.clone() },
-            delete_story: DeleteStory { repo: repo.clone() },
-            get_story: GetStory { repo: repo.clone() },
-            get_stories: GetStories { repo: repo.clone() },
-            update_story: UpdateStory { repo },
+            create_story: CreateStory::new(story_repo.clone()),
+            delete_story: DeleteStory::new(story_repo.clone()),
+            get_story: GetStory::new(story_repo.clone()),
+            get_stories: GetStories::new(story_repo.clone()),
+            update_story: UpdateStory::new(story_repo),
         }
     }
 
