@@ -12,9 +12,9 @@ pub struct Ctx {
     /// Config
     pub config: Arc<Config>,
     /// Story service
-    pub story: Arc<StoryService>,
+    pub stories: Arc<StoryService>,
     /// Task service
-    pub task: Arc<TaskService>,
+    pub tasks: Arc<TaskService>,
 }
 
 impl Ctx {
@@ -31,8 +31,8 @@ impl Ctx {
         // Ctx
         Self {
             config,
-            story: Arc::new(story_service),
-            task: Arc::new(task_service),
+            stories: Arc::new(story_service),
+            tasks: Arc::new(task_service),
         }
     }
 }

@@ -13,7 +13,7 @@ pub struct StoryBody {
 }
 
 impl StoryBody {
-    /// Sanitize and validate story name from request body
+    /// Validate a story create/update request.
     pub fn validate(&self) -> Result<String> {
         let name = self.name.trim().to_string();
         if name.is_empty() || name.len() > MAX_NAME_LEN {
@@ -31,7 +31,7 @@ pub struct CreateTaskBody {
 }
 
 impl CreateTaskBody {
-    /// Sanitize and validate task name and story_id from request body
+    /// Validate a task create request.
     pub fn validate(&self) -> Result<(i32, String)> {
         // Collects error messages
         let mut messages = Vec::new();
@@ -63,7 +63,7 @@ pub struct PatchTaskBody {
 }
 
 impl PatchTaskBody {
-    /// Helper to validate fields to update for a task.
+    /// Validate a task update request.
     pub fn validate(&self) -> Result<(Option<String>, Option<Status>)> {
         // Make sure at least one field is provided
         if self.name.is_none() && self.status.is_none() {
@@ -86,7 +86,7 @@ impl PatchTaskBody {
         }
         if let Some(s) = &self.status {
             if let Ok(parsed) = Status::from_str(s) {
-                status = Some(parsed)
+                status = Some(parsed);
             } else {
                 messages.push("status: invalid enum variant".into());
             }

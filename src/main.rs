@@ -18,10 +18,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
     dotenv().ok();
 
     // Init tracing
-    if env::var("DEV_MODE").unwrap_or_default().is_empty() {
-        tracing_subscriber::fmt().json().init();
-    } else {
+    if env::var("DEV_MODE").is_ok() {
         tracing_subscriber::fmt::init();
+    } else {
+        tracing_subscriber::fmt().json().init();
     }
 
     // Load config

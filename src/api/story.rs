@@ -30,7 +30,7 @@ pub fn routes() -> Router<Arc<Ctx>> {
 /// Get story by id
 async fn get_story(Path(id): Path<i32>, State(ctx): State<Arc<Ctx>>) -> Result<Json<Story>> {
     tracing::info!("GET /stories/{}", id);
-    let story = ctx.story.get(id).await?;
+    let story = ctx.stories.get(id).await?;
     Ok(Json(story))
 }
 
@@ -42,7 +42,7 @@ async fn get_stories(
     tracing::info!("GET /stories");
     let q = params.unwrap_or_default();
     let page_id = PageToken::decode_or(&q.page_token, std::i32::MAX)?;
-    let (next_page, stories) = ctx.story.list(page_id).await?;
+    let (next_page, stories) = ctx.stories.list(page_id).await?;
     let page = Page::new(PageToken::encode(next_page), stories);
     Ok(Json(page))
 }
@@ -53,7 +53,7 @@ async fn get_tasks(
     State(ctx): State<Arc<Ctx>>,
 ) -> Result<Json<Vec<Task>>> {
     tracing::info!("GET /stories/{}/tasks", story_id);
-    let tasks = ctx.task.list(story_id).await?;
+    let tasks = ctx.tasks.list(story_id).await?;
     Ok(Json(tasks))
 }
 
@@ -64,7 +64,7 @@ async fn create_story(
 ) -> Result<impl IntoResponse> {
     tracing::info!("POST /stories");
     let name = body.validate()?;
-    let story = ctx.story.create(name).await?;
+    let story = ctx.stories.create(name).await?;
     Ok((StatusCode::CREATED, Json(story)))
 }
 
@@ -76,14 +76,14 @@ async fn update_story(
 ) -> Result<Json<Story>> {
     tracing::info!("PATCH /stories/{}", id);
     let name = body.validate()?;
-    let story = ctx.story.update(id, name).await?;
+    let story = ctx.stories.update(id, name).await?;
     Ok(Json(story))
 }
 
 /// Delete a story by id
 async fn delete_story(Path(id): Path<i32>, State(ctx): State<Arc<Ctx>>) -> StatusCode {
     tracing::info!("DELETE /stories/{}", id);
-    match ctx.story.delete(id).await {
+    match ctx.stories.delete(id).await {
         Ok(()) => StatusCode::NO_CONTENT,
         Err(err) => StatusCode::from(err),
     }

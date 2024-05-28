@@ -14,8 +14,8 @@ pub struct PageParams {
 #[derive(Debug, Serialize)]
 pub struct Page<T: Serialize> {
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub next_page: Option<String>,
-    pub data: Vec<T>,
+    next_page: Option<String>,
+    data: Vec<T>,
 }
 
 impl<T: Serialize> Page<T> {
@@ -28,8 +28,8 @@ impl<T: Serialize> Page<T> {
 /// A paging token for accessing previous, next pages of domain objects in a list call.
 #[derive(BorshSerialize, BorshDeserialize)]
 pub struct PageToken {
-    pub id: i32,
-    pub ts: u64,
+    id: i32,
+    ts: u64,
 }
 
 impl PageToken {

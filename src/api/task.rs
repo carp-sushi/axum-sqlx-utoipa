@@ -26,7 +26,7 @@ pub fn routes() -> Router<Arc<Ctx>> {
 /// Get task by id
 async fn get_task(Path(id): Path<i32>, State(ctx): State<Arc<Ctx>>) -> Result<Json<Task>> {
     tracing::info!("GET /tasks/{}", id);
-    let task = ctx.task.get(id).await?;
+    let task = ctx.tasks.get(id).await?;
     Ok(Json(task))
 }
 
@@ -36,8 +36,8 @@ async fn create_task(
     Json(body): Json<CreateTaskBody>,
 ) -> Result<impl IntoResponse> {
     tracing::info!("POST /tasks");
-    body.validate()?;
-    let task = ctx.task.create(body.story_id, body.name).await?;
+    let (story_id, name) = body.validate()?;
+    let task = ctx.tasks.create(story_id, name).await?;
     Ok((StatusCode::CREATED, Json(task)))
 }
 
@@ -49,14 +49,14 @@ async fn update_task(
 ) -> Result<Json<Task>> {
     tracing::info!("PATCH /tasks/{}", id);
     let (name, status) = body.validate()?;
-    let task = ctx.task.update(id, name, status).await?;
+    let task = ctx.tasks.update(id, name, status).await?;
     Ok(Json(task))
 }
 
 /// Delete a task by id
 async fn delete_task(Path(id): Path<i32>, State(ctx): State<Arc<Ctx>>) -> StatusCode {
     tracing::info!("DELETE /tasks/{}", id);
-    if let Err(err) = ctx.task.delete(id).await {
+    if let Err(err) = ctx.tasks.delete(id).await {
         StatusCode::from(err)
     } else {
         StatusCode::NO_CONTENT

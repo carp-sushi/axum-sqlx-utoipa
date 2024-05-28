@@ -34,7 +34,7 @@ impl TaskService {
     /// Create a new task service
     pub fn new(task_repo: Arc<TaskRepo>, story_repo: Arc<StoryRepo>) -> Self {
         Self {
-            create_task: CreateTask::new(task_repo.clone()),
+            create_task: CreateTask::new(story_repo.clone(), task_repo.clone()),
             delete_task: DeleteTask::new(task_repo.clone()),
             get_task: GetTask::new(task_repo.clone()),
             update_task: UpdateTask::new(task_repo.clone()),

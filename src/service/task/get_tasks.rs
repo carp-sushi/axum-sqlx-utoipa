@@ -43,6 +43,7 @@ impl UseCase for GetTasks {
         // This is an optimization; if tasks were returned, the story DOES exist
         // and no further querying is required.
         if tasks.is_empty() {
+            // Only care about errors here
             let _ = self.story_repo.fetch(story_id).await?;
         }
 
