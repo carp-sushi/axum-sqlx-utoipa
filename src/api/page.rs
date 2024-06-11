@@ -1,4 +1,4 @@
-use crate::{Error, Result};
+use crate::Result;
 use base64::{engine::general_purpose::URL_SAFE, Engine as _};
 use borsh::{BorshDeserialize, BorshSerialize};
 use serde::{Deserialize, Serialize};
@@ -52,8 +52,7 @@ impl PageToken {
             None => Ok(default),
             Some(token) => {
                 let bytes = URL_SAFE.decode(token)?;
-                let page_token: PageToken = borsh::from_slice(&bytes)
-                    .map_err(|_| Error::invalid_args("invalid page token encoding"))?;
+                let page_token: PageToken = borsh::from_slice(&bytes)?;
                 Ok(page_token.id)
             }
         }

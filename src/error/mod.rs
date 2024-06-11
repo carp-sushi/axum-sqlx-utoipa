@@ -37,3 +37,9 @@ impl From<base64::DecodeError> for Error {
         Error::internal(err.to_string())
     }
 }
+
+impl From<std::io::Error> for Error {
+    fn from(err: std::io::Error) -> Self {
+        Error::internal(err.to_string())
+    }
+}
