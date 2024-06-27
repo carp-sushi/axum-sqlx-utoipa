@@ -43,9 +43,7 @@ impl StoryRepo {
 
         match maybe_story {
             Some(story) => Ok(story),
-            None => Err(Error::NotFound {
-                message: format!("story not found: {}", id),
-            }),
+            None => Err(Error::not_found(format!("story not found: {}", id))),
         }
     }
 

@@ -59,9 +59,7 @@ impl TaskRepo {
 
         match task_option {
             Some(task) => Ok(task),
-            None => Err(Error::NotFound {
-                message: format!("task not found: {}", id),
-            }),
+            None => Err(Error::not_found(format!("task not found: {}", id))),
         }
     }
 
