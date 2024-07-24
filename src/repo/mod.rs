@@ -45,7 +45,7 @@ mod tests {
     pub async fn setup_pg_pool(container: &Container<Postgres>) -> Arc<PgPool> {
         let connection_string = &format!(
             "postgres://postgres:postgres@localhost:{}/postgres",
-            container.get_host_port_ipv4(5432).await,
+            container.get_host_port_ipv4(5432).await.unwrap(),
         );
 
         let pool = PgPoolOptions::new()

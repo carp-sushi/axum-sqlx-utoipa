@@ -131,15 +131,15 @@ mod tests {
     };
     use std::sync::Arc;
 
-    use testcontainers::{runners::AsyncRunner, RunnableImage};
+    use testcontainers::{runners::AsyncRunner, ImageExt};
     use testcontainers_modules::postgres::Postgres;
 
     #[ignore]
     #[tokio::test]
     async fn integration_test() {
         // Set up postgres test container backed repo
-        let image = RunnableImage::from(Postgres::default()).with_tag("16-alpine");
-        let container = image.start().await;
+        let image = Postgres::default().with_tag("16-alpine");
+        let container = image.start().await.unwrap();
         let pool = tests::setup_pg_pool(&container).await;
         let repo = Repo::new(Arc::clone(&pool));
 
