@@ -4,6 +4,7 @@ use std::sync::Arc;
 mod ctx;
 mod dto;
 mod page;
+mod status;
 mod story;
 mod task;
 
@@ -22,6 +23,9 @@ impl Api {
 
     /// Define API routes, mapping paths to handlers.
     pub fn routes(self) -> Router {
-        story::routes().merge(task::routes()).with_state(self.ctx)
+        status::routes()
+            .merge(story::routes())
+            .merge(task::routes())
+            .with_state(self.ctx)
     }
 }

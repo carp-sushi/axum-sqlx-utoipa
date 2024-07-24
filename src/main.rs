@@ -38,12 +38,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
     MIGRATOR.run(&pool).await?;
 
     // Set up API
-    let ctx = Ctx::new(Arc::clone(&config), Arc::new(pool));
+    let ctx = Ctx::new(Arc::new(pool));
     let api = Api::new(Arc::new(ctx));
 
     // Start server
     tracing::info!("Server listening on {}", config.listen_addr);
-    axum::serve(config.tcp_listener(), api.routes()).await?;
+    let listener = config.tcp_listener().await;
+    axum::serve(listener, api.routes()).await?;
 
     Ok(())
 }

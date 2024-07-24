@@ -46,12 +46,12 @@ impl CreateTaskBody {
             messages.push("name: invalid length".into());
         }
 
-        // Return params or errors
-        if messages.is_empty() {
-            Ok((story_id, name))
-        } else {
-            Err(Error::InvalidArgs { messages })
+        // Check for validation failures and return an error if found
+        if !messages.is_empty() {
+            return Err(Error::InvalidArgs { messages });
         }
+
+        Ok((story_id, name))
     }
 }
 
@@ -85,14 +85,13 @@ impl PatchTaskBody {
             }
         }
         if let Some(s) = &self.status {
-            if let Ok(parsed) = Status::from_str(s) {
-                status = Some(parsed);
-            } else {
-                messages.push("status: invalid enum variant".into());
+            match Status::from_str(s) {
+                Ok(parsed) => status = Some(parsed),
+                Err(err) => messages.push(format!("status: {}", err)),
             }
         }
 
-        // Determine result of validation
+        // Check for validation failures and return an error if found
         if !messages.is_empty() {
             return Err(Error::InvalidArgs { messages });
         }

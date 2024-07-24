@@ -1,10 +1,26 @@
 use crate::Error;
+use sqlx::postgres::PgPool;
+use std::sync::Arc;
 
 mod story;
 mod task;
 
-pub use story::StoryRepo;
-pub use task::TaskRepo;
+/// Concrete database logic
+pub struct Repo {
+    db: Arc<PgPool>,
+}
+
+impl Repo {
+    /// Constructor
+    pub fn new(db: Arc<PgPool>) -> Self {
+        Self { db }
+    }
+
+    /// Get a ref to the connection pool.
+    fn db_ref(&self) -> &PgPool {
+        self.db.as_ref()
+    }
+}
 
 impl From<sqlx::Error> for Error {
     fn from(err: sqlx::Error) -> Self {

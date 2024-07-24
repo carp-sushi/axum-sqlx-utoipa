@@ -1,5 +1,5 @@
 use super::UseCase;
-use crate::{domain::Story, repo::StoryRepo, Result};
+use crate::{domain::Story, repo::Repo, Result};
 use std::sync::Arc;
 
 // Use case mods
@@ -17,7 +17,6 @@ use get_story::GetStory;
 use update_story::UpdateStory;
 
 /// A high-level API for managaing stories.
-/// This service is composed of (comprises) use cases.
 pub struct StoryService {
     create_story: CreateStory,
     delete_story: DeleteStory,
@@ -28,13 +27,13 @@ pub struct StoryService {
 
 impl StoryService {
     /// Create a new story service
-    pub fn new(story_repo: Arc<StoryRepo>) -> Self {
+    pub fn new(repo: Arc<Repo>) -> Self {
         Self {
-            create_story: CreateStory::new(story_repo.clone()),
-            delete_story: DeleteStory::new(story_repo.clone()),
-            get_story: GetStory::new(story_repo.clone()),
-            get_stories: GetStories::new(story_repo.clone()),
-            update_story: UpdateStory::new(story_repo),
+            create_story: CreateStory::new(repo.clone()),
+            delete_story: DeleteStory::new(repo.clone()),
+            get_story: GetStory::new(repo.clone()),
+            get_stories: GetStories::new(repo.clone()),
+            update_story: UpdateStory::new(repo),
         }
     }
 
@@ -54,12 +53,14 @@ impl StoryService {
     }
 
     /// Get a page of stories
-    pub async fn list(&self, page_id: i32) -> Result<(i32, Vec<Story>)> {
-        self.get_stories.execute(page_id).await
+    pub async fn list(&self, page_id: i32, page_size: i32) -> Result<(i32, Vec<Story>)> {
+        let args = (page_id, page_size);
+        self.get_stories.execute(args).await
     }
 
     /// Update a story
     pub async fn update(&self, id: i32, name: String) -> Result<Story> {
-        self.update_story.execute((id, name)).await
+        let args = (id, name);
+        self.update_story.execute(args).await
     }
 }

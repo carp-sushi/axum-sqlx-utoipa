@@ -1,26 +1,17 @@
-use crate::{
-    domain::Task,
-    repo::{StoryRepo, TaskRepo},
-    service::UseCase,
-    Result,
-};
+use crate::{domain::Task, repo::Repo, service::UseCase, Result};
 use async_trait::async_trait;
 use futures_util::TryFutureExt;
 use std::sync::Arc;
 
 /// Create a new task.
 pub struct CreateTask {
-    story_repo: Arc<StoryRepo>,
-    task_repo: Arc<TaskRepo>,
+    repo: Arc<Repo>,
 }
 
 impl CreateTask {
     /// Constructor
-    pub fn new(story_repo: Arc<StoryRepo>, task_repo: Arc<TaskRepo>) -> Self {
-        Self {
-            story_repo,
-            task_repo,
-        }
+    pub fn new(repo: Arc<Repo>) -> Self {
+        Self { repo }
     }
 }
 
@@ -37,9 +28,9 @@ impl UseCase for CreateTask {
         tracing::debug!("execute: story_id={}, name={}", story_id, name);
 
         // Verify the parent story exists, then create the task
-        self.story_repo
-            .fetch(story_id)
-            .and_then(|_| self.task_repo.create(story_id, name))
+        self.repo
+            .fetch_story(story_id)
+            .and_then(|_| self.repo.create_task(story_id, name))
             .await
     }
 }

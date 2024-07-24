@@ -1,6 +1,6 @@
 use crate::{
     domain::{Status, Task},
-    repo::TaskRepo,
+    repo::Repo,
     service::UseCase,
     Error, Result,
 };
@@ -10,13 +10,13 @@ use std::sync::Arc;
 
 /// Update tasks.
 pub struct UpdateTask {
-    task_repo: Arc<TaskRepo>,
+    repo: Arc<Repo>,
 }
 
 impl UpdateTask {
     /// Constructor
-    pub fn new(task_repo: Arc<TaskRepo>) -> Self {
-        Self { task_repo }
+    pub fn new(repo: Arc<Repo>) -> Self {
+        Self { repo }
     }
 }
 
@@ -39,12 +39,12 @@ impl UseCase for UpdateTask {
         }
 
         // Fetch the task and update it.
-        self.task_repo
-            .fetch(id)
+        self.repo
+            .fetch_task(id)
             .and_then(|task| {
                 let name = name_opt.unwrap_or(task.name);
                 let status = status_opt.unwrap_or(task.status);
-                self.task_repo.update(id, name, status)
+                self.repo.update_task(id, name, status)
             })
             .await
     }

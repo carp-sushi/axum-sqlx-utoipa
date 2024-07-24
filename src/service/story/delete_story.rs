@@ -1,17 +1,17 @@
-use crate::{repo::StoryRepo, service::UseCase, Result};
+use crate::{repo::Repo, service::UseCase, Result};
 use async_trait::async_trait;
 use futures_util::TryFutureExt;
 use std::sync::Arc;
 
 /// Delete stories by id.
 pub struct DeleteStory {
-    story_repo: Arc<StoryRepo>,
+    repo: Arc<Repo>,
 }
 
 impl DeleteStory {
     /// Constructor
-    pub fn new(story_repo: Arc<StoryRepo>) -> Self {
-        Self { story_repo }
+    pub fn new(repo: Arc<Repo>) -> Self {
+        Self { repo }
     }
 }
 
@@ -27,9 +27,9 @@ impl UseCase for DeleteStory {
     async fn execute(&self, id: Self::Req) -> Self::Rep {
         tracing::debug!("execute: id={}", id);
 
-        self.story_repo
-            .fetch(id)
-            .and_then(|_| self.story_repo.delete(id))
+        self.repo
+            .fetch_story(id)
+            .and_then(|_| self.repo.delete_story(id))
             .await
             .map(|_| ())
     }

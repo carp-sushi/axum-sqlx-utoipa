@@ -1,4 +1,4 @@
-use crate::Result;
+use crate::{Error, Result};
 use base64::{engine::general_purpose::URL_SAFE, Engine as _};
 use borsh::{BorshDeserialize, BorshSerialize};
 use serde::{Deserialize, Serialize};
@@ -6,13 +6,14 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 /// The query parameters for getting a page of domain objects from a list endpoint.
 #[derive(Debug, Deserialize, Default)]
-pub struct PageParams {
+pub(crate) struct PageParams {
     pub page_token: Option<String>,
+    pub page_size: Option<i32>,
 }
 
 /// A page of domain objects
 #[derive(Debug, Serialize)]
-pub struct Page<T: Serialize> {
+pub(crate) struct Page<T: Serialize> {
     #[serde(skip_serializing_if = "Option::is_none")]
     next_page: Option<String>,
     data: Vec<T>,
@@ -27,7 +28,7 @@ impl<T: Serialize> Page<T> {
 
 /// A paging token for accessing previous, next pages of domain objects in a list call.
 #[derive(BorshSerialize, BorshDeserialize)]
-pub struct PageToken {
+pub(crate) struct PageToken {
     id: i32,
     ts: u64,
 }
@@ -38,16 +39,20 @@ impl PageToken {
         if id <= 0 {
             return None;
         }
-        if let Ok(bytes) = borsh::to_vec(&PageToken { id, ts: now() }) {
-            Some(URL_SAFE.encode(bytes))
-        } else {
-            tracing::warn!("failed serializing page token: {}", id);
-            None
+        match borsh::to_vec(&PageToken { id, ts: now() }) {
+            Ok(bytes) => Some(URL_SAFE.encode(bytes)),
+            Err(err) => {
+                tracing::warn!("failed serializing page token: {}", err);
+                None
+            }
         }
     }
 
     /// Extract page id from encoded token param, falling back to a default value.
     pub fn decode_or(token_opt: &Option<String>, default: i32) -> Result<i32> {
+        if default <= 0 {
+            return Err(Error::invalid_args("default page id must be > 0"));
+        }
         match token_opt {
             None => Ok(default),
             Some(token) => {
@@ -65,4 +70,31 @@ fn now() -> u64 {
         .duration_since(UNIX_EPOCH)
         .unwrap_or(Duration::MAX)
         .as_secs()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn encode_decode_page_token() {
+        let input = 5201;
+        let pt = PageToken::encode(input);
+        assert!(pt.is_some());
+        let output = PageToken::decode_or(&pt, 1).unwrap();
+        assert_eq!(input, output);
+    }
+
+    #[test]
+    fn encode_invalid_page_id() {
+        assert!(PageToken::encode(0).is_none());
+        assert!(PageToken::encode(-10).is_none());
+    }
+
+    #[test]
+    fn decode_default() {
+        let fallback = i32::MAX;
+        let output = PageToken::decode_or(&None, fallback).unwrap();
+        assert_eq!(fallback, output);
+    }
 }

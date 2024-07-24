@@ -1,7 +1,7 @@
 use super::UseCase;
 use crate::{
     domain::{Status, Task},
-    repo::{StoryRepo, TaskRepo},
+    repo::Repo,
     Result,
 };
 use std::sync::Arc;
@@ -21,7 +21,6 @@ use get_tasks::GetTasks;
 use update_task::UpdateTask;
 
 /// A high-level API for managaing tasks.
-/// This service is composed of (comprises) use cases.
 pub struct TaskService {
     create_task: CreateTask,
     delete_task: DeleteTask,
@@ -32,19 +31,20 @@ pub struct TaskService {
 
 impl TaskService {
     /// Create a new task service
-    pub fn new(task_repo: Arc<TaskRepo>, story_repo: Arc<StoryRepo>) -> Self {
+    pub fn new(repo: Arc<Repo>) -> Self {
         Self {
-            create_task: CreateTask::new(story_repo.clone(), task_repo.clone()),
-            delete_task: DeleteTask::new(task_repo.clone()),
-            get_task: GetTask::new(task_repo.clone()),
-            update_task: UpdateTask::new(task_repo.clone()),
-            get_tasks: GetTasks::new(story_repo, task_repo),
+            create_task: CreateTask::new(repo.clone()),
+            delete_task: DeleteTask::new(repo.clone()),
+            get_task: GetTask::new(repo.clone()),
+            update_task: UpdateTask::new(repo.clone()),
+            get_tasks: GetTasks::new(repo),
         }
     }
 
     /// Create a task
     pub async fn create(&self, story_id: i32, name: String) -> Result<Task> {
-        self.create_task.execute((story_id, name)).await
+        let args = (story_id, name);
+        self.create_task.execute(args).await
     }
 
     /// Delete a task
@@ -69,6 +69,7 @@ impl TaskService {
         name: Option<String>,
         status: Option<Status>,
     ) -> Result<Task> {
-        self.update_task.execute((id, name, status)).await
+        let args = (id, name, status);
+        self.update_task.execute(args).await
     }
 }

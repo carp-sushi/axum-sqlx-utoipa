@@ -1,10 +1,7 @@
+use super::Repo;
 use crate::{domain::Story, Error, Result};
 use futures_util::TryStreamExt;
-use sqlx::{
-    postgres::{PgPool, PgRow},
-    FromRow, Row,
-};
-use std::sync::Arc;
+use sqlx::{postgres::PgRow, FromRow, Row};
 
 /// Map sqlx rows to story domain objects.
 impl FromRow<'_, PgRow> for Story {
@@ -16,26 +13,10 @@ impl FromRow<'_, PgRow> for Story {
     }
 }
 
-/// Concrete story related database logic
-pub struct StoryRepo {
-    db: Arc<PgPool>,
-}
-
-impl StoryRepo {
-    /// Constructor
-    pub fn new(db: Arc<PgPool>) -> Self {
-        Self { db }
-    }
-
-    /// Get a ref to the connection pool.
-    fn db_ref(&self) -> &PgPool {
-        self.db.as_ref()
-    }
-}
-
-impl StoryRepo {
+// Extend repo with queries related to stories.
+impl Repo {
     /// Select a story by id
-    pub async fn fetch(&self, id: i32) -> Result<Story> {
+    pub async fn fetch_story(&self, id: i32) -> Result<Story> {
         tracing::debug!("fetch: id={}", id);
 
         let q = sqlx::query_as("SELECT id, name FROM stories WHERE id = $1");
@@ -48,16 +29,16 @@ impl StoryRepo {
     }
 
     /// Select a page of stories.
-    pub async fn list(&self, page_id: i32) -> Result<Vec<Story>> {
+    pub async fn list_stories(&self, page_id: i32, page_size: i32) -> Result<Vec<Story>> {
         tracing::debug!("list: page_id={}", page_id);
 
         let q = sqlx::query(
             r#"SELECT id, name FROM stories WHERE id <= $1
-            ORDER BY id desc LIMIT 100"#,
+            ORDER BY id desc LIMIT $2"#,
         );
-        let mut result_set = q.bind(page_id).fetch(self.db_ref());
+        let mut result_set = q.bind(page_id).bind(page_size).fetch(self.db_ref());
 
-        let mut result = Vec::with_capacity(100);
+        let mut result = Vec::with_capacity(page_size as usize);
         while let Some(row) = result_set.try_next().await? {
             let story = Story::from_row(&row)?;
             result.push(story);
@@ -67,18 +48,17 @@ impl StoryRepo {
     }
 
     /// Insert a new story
-    pub async fn create(&self, name: String) -> Result<Story> {
+    pub async fn create_story(&self, name: String) -> Result<Story> {
         tracing::debug!("create: name={}", name);
 
-        let sql = "INSERT INTO stories (name) VALUES ($1) RETURNING id, name";
-        let q = sqlx::query_as(sql);
+        let q = sqlx::query_as("INSERT INTO stories (name) VALUES ($1) RETURNING id, name");
         let story = q.bind(name).fetch_one(self.db_ref()).await?;
 
         Ok(story)
     }
 
     /// Update story name
-    pub async fn update(&self, id: i32, name: String) -> Result<Story> {
+    pub async fn update_story(&self, id: i32, name: String) -> Result<Story> {
         tracing::debug!("update: id={}, name={}", id, name);
 
         let q = sqlx::query_as("UPDATE stories SET name = $1 WHERE id = $2 RETURNING id, name");
@@ -88,24 +68,24 @@ impl StoryRepo {
     }
 
     /// Delete a story and its tasks.
-    pub async fn delete(&self, id: i32) -> Result<u64> {
+    pub async fn delete_story(&self, id: i32) -> Result<u64> {
         tracing::debug!("delete: id={}", id);
 
         let mut tx = self.db.begin().await?;
 
-        let q1 = sqlx::query("DELETE FROM tasks WHERE story_id = $1");
-        let r1 = q1.bind(id).execute(&mut *tx).await?;
+        let qdt = sqlx::query("DELETE FROM tasks WHERE story_id = $1");
+        qdt.bind(id).execute(&mut *tx).await?;
 
-        let q2 = sqlx::query("DELETE FROM stories WHERE id = $1");
-        let r2 = q2.bind(id).execute(&mut *tx).await?;
+        let qds = sqlx::query("DELETE FROM stories WHERE id = $1");
+        let result = qds.bind(id).execute(&mut *tx).await?;
 
         tx.commit().await?;
 
-        Ok(r1.rows_affected() + r2.rows_affected())
+        Ok(result.rows_affected())
     }
 
     /// Check whether a story exists.
-    pub async fn exists(&self, id: i32) -> bool {
+    pub async fn story_exists(&self, id: i32) -> bool {
         tracing::debug!("exists: id={}", id);
 
         let q = sqlx::query("SELECT EXISTS(SELECT 1 FROM stories WHERE id = $1)");
@@ -134,35 +114,33 @@ mod tests {
         let image = RunnableImage::from(Postgres::default()).with_tag("16-alpine");
         let container = image.start().await;
         let pool = tests::setup_pg_pool(&container).await;
-
-        // Set up repo under test
-        let story_repo = StoryRepo::new(pool);
+        let repo = Repo::new(pool);
 
         // Create story
         let name = "Books To Read".to_string();
-        let story = story_repo.create(name.clone()).await.unwrap();
+        let story = repo.create_story(name.clone()).await.unwrap();
         assert_eq!(name, story.name);
 
         // Assert the story exists
-        assert!(story_repo.exists(story.id).await);
+        assert!(repo.story_exists(story.id).await);
 
         // Query stories page
-        let stories = story_repo.list(std::i32::MAX).await.unwrap();
+        let stories = repo.list_stories(i32::MAX, 10).await.unwrap();
         assert_eq!(stories.len(), 1);
 
         // Update the name
         let updated_name = "Books".to_string();
-        story_repo.update(story.id, updated_name).await.unwrap();
+        repo.update_story(story.id, updated_name).await.unwrap();
 
         // Fetch and verify new name
-        let story = story_repo.fetch(story.id).await.unwrap();
+        let story = repo.fetch_story(story.id).await.unwrap();
         assert_eq!(story.name, "Books");
 
         // Delete the story
-        let rows = story_repo.delete(story.id).await.unwrap();
+        let rows = repo.delete_story(story.id).await.unwrap();
         assert_eq!(rows, 1);
 
         // Assert story was deleted
-        assert!(!story_repo.exists(story.id).await);
+        assert!(!repo.story_exists(story.id).await);
     }
 }

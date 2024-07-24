@@ -1,17 +1,17 @@
-use crate::{domain::Story, repo::StoryRepo, service::UseCase, Result};
+use crate::{domain::Story, repo::Repo, service::UseCase, Result};
 use async_trait::async_trait;
 use futures_util::TryFutureExt;
 use std::sync::Arc;
 
 /// Updates stories
 pub struct UpdateStory {
-    story_repo: Arc<StoryRepo>,
+    repo: Arc<Repo>,
 }
 
 impl UpdateStory {
     /// Constructor
-    pub fn new(story_repo: Arc<StoryRepo>) -> Self {
-        Self { story_repo }
+    pub fn new(repo: Arc<Repo>) -> Self {
+        Self { repo }
     }
 }
 
@@ -27,9 +27,9 @@ impl UseCase for UpdateStory {
     async fn execute(&self, (id, name): Self::Req) -> Self::Rep {
         tracing::debug!("execute: id={}, name={}", id, name);
 
-        self.story_repo
-            .fetch(id)
-            .and_then(|_| self.story_repo.update(id, name))
+        self.repo
+            .fetch_story(id)
+            .and_then(|_| self.repo.update_story(id, name))
             .await
     }
 }

@@ -1,10 +1,7 @@
 use crate::{
-    api::{
-        dto::StoryBody,
-        page::{Page, PageParams, PageToken},
-        Ctx,
-    },
-    domain::{Story, Task},
+    api::dto::StoryBody,
+    api::page::{Page, PageParams, PageToken},
+    api::Ctx,
     Result,
 };
 use axum::{
@@ -16,19 +13,20 @@ use axum::{
 };
 use std::sync::Arc;
 
+// Define a reasonable page size when a param value was not provided.
+const DEFAULT_PAGE_SIZE: i32 = 50;
+
 /// API routes for stories
+#[rustfmt::skip]
 pub fn routes() -> Router<Arc<Ctx>> {
     Router::new()
         .route("/stories", get(get_stories).post(create_story))
+        .route("/stories/:id", get(get_story).delete(delete_story).patch(update_story))
         .route("/stories/:id/tasks", get(get_tasks))
-        .route(
-            "/stories/:id",
-            get(get_story).delete(delete_story).patch(update_story),
-        )
 }
 
 /// Get story by id
-async fn get_story(Path(id): Path<i32>, State(ctx): State<Arc<Ctx>>) -> Result<Json<Story>> {
+async fn get_story(Path(id): Path<i32>, State(ctx): State<Arc<Ctx>>) -> Result<impl IntoResponse> {
     tracing::info!("GET /stories/{}", id);
     let story = ctx.stories.get(id).await?;
     Ok(Json(story))
@@ -40,10 +38,14 @@ async fn get_stories(
     State(ctx): State<Arc<Ctx>>,
 ) -> Result<impl IntoResponse> {
     tracing::info!("GET /stories");
+
     let q = params.unwrap_or_default();
-    let page_id = PageToken::decode_or(&q.page_token, std::i32::MAX)?;
-    let (next_page, stories) = ctx.stories.list(page_id).await?;
+    let page_id = PageToken::decode_or(&q.page_token, i32::MAX)?;
+    let page_size = q.page_size.unwrap_or(DEFAULT_PAGE_SIZE);
+
+    let (next_page, stories) = ctx.stories.list(page_id, page_size).await?;
     let page = Page::new(PageToken::encode(next_page), stories);
+
     Ok(Json(page))
 }
 
@@ -51,7 +53,7 @@ async fn get_stories(
 async fn get_tasks(
     Path(story_id): Path<i32>,
     State(ctx): State<Arc<Ctx>>,
-) -> Result<Json<Vec<Task>>> {
+) -> Result<impl IntoResponse> {
     tracing::info!("GET /stories/{}/tasks", story_id);
     let tasks = ctx.tasks.list(story_id).await?;
     Ok(Json(tasks))
@@ -73,7 +75,7 @@ async fn update_story(
     Path(id): Path<i32>,
     State(ctx): State<Arc<Ctx>>,
     Json(body): Json<StoryBody>,
-) -> Result<Json<Story>> {
+) -> Result<impl IntoResponse> {
     tracing::info!("PATCH /stories/{}", id);
     let name = body.validate()?;
     let story = ctx.stories.update(id, name).await?;

@@ -1,8 +1,6 @@
 use crate::{
-    api::{
-        dto::{CreateTaskBody, PatchTaskBody},
-        Ctx,
-    },
+    api::dto::{CreateTaskBody, PatchTaskBody},
+    api::Ctx,
     domain::Task,
     Result,
 };
@@ -16,11 +14,11 @@ use axum::{
 use std::sync::Arc;
 
 /// API routes for tasks
+#[rustfmt::skip]
 pub fn routes() -> Router<Arc<Ctx>> {
-    Router::new().route("/tasks", post(create_task)).route(
-        "/tasks/:id",
-        get(get_task).delete(delete_task).patch(update_task),
-    )
+    Router::new()
+        .route("/tasks", post(create_task))
+        .route("/tasks/:id", get(get_task).delete(delete_task).patch(update_task))
 }
 
 /// Get task by id

@@ -1,14 +1,11 @@
+use super::Repo;
 use crate::{
     domain::{Status, Task},
     Error, Result,
 };
 use futures_util::TryStreamExt;
-use sqlx::{
-    postgres::{PgPool, PgRow},
-    FromRow, Row,
-};
+use sqlx::{postgres::PgRow, FromRow, Row};
 use std::str::FromStr;
-use std::sync::Arc;
 
 /// Map sqlx rows to task domain objects.
 impl FromRow<'_, PgRow> for Task {
@@ -32,26 +29,10 @@ impl FromRow<'_, PgRow> for Task {
     }
 }
 
-/// Concrete task related database logic
-pub struct TaskRepo {
-    db: Arc<PgPool>,
-}
-
-impl TaskRepo {
-    /// Constructor
-    pub fn new(db: Arc<PgPool>) -> Self {
-        Self { db }
-    }
-
-    /// Get a ref to the connection pool.
-    fn db_ref(&self) -> &PgPool {
-        self.db.as_ref()
-    }
-}
-
-impl TaskRepo {
+// Extend repo with queries related to tasks.
+impl Repo {
     /// Get a task by id
-    pub async fn fetch(&self, id: i32) -> Result<Task> {
+    pub async fn fetch_task(&self, id: i32) -> Result<Task> {
         tracing::debug!("fetch: id={}", id);
 
         let q = sqlx::query_as("SELECT id, story_id, name, status FROM tasks WHERE id = $1");
@@ -64,7 +45,7 @@ impl TaskRepo {
     }
 
     /// Select tasks for a story
-    pub async fn list(&self, story_id: i32) -> Result<Vec<Task>> {
+    pub async fn list_tasks(&self, story_id: i32) -> Result<Vec<Task>> {
         tracing::debug!("list: story_id={}", story_id);
 
         let q = sqlx::query(
@@ -73,7 +54,8 @@ impl TaskRepo {
         );
         let mut result_set = q.bind(story_id).fetch(self.db_ref());
 
-        let mut tasks = Vec::new();
+        // Assume a hard limit on the number of tasks under a story.
+        let mut tasks = Vec::with_capacity(1000);
         while let Some(row) = result_set.try_next().await? {
             let task = Task::from_row(&row)?;
             tasks.push(task);
@@ -83,7 +65,7 @@ impl TaskRepo {
     }
 
     /// Insert a new task
-    pub async fn create(&self, story_id: i32, name: String) -> Result<Task> {
+    pub async fn create_task(&self, story_id: i32, name: String) -> Result<Task> {
         tracing::debug!("create: story_id={}, name={}", story_id, name);
 
         let q = sqlx::query_as(
@@ -96,7 +78,7 @@ impl TaskRepo {
     }
 
     /// Update task name and status.
-    pub async fn update(&self, id: i32, name: String, status: Status) -> Result<Task> {
+    pub async fn update_task(&self, id: i32, name: String, status: Status) -> Result<Task> {
         tracing::debug!("update: id={}, name={}, status={}", id, name, status);
 
         let q = sqlx::query_as(
@@ -115,7 +97,7 @@ impl TaskRepo {
     }
 
     /// Delete a task.
-    pub async fn delete(&self, id: i32) -> Result<u64> {
+    pub async fn delete_task(&self, id: i32) -> Result<u64> {
         tracing::debug!("delete: id={}", id);
 
         let result = sqlx::query("DELETE FROM tasks WHERE id = $1")
@@ -127,7 +109,7 @@ impl TaskRepo {
     }
 
     /// Check whether a task exists.
-    pub async fn exists(&self, id: i32) -> bool {
+    pub async fn task_exists(&self, id: i32) -> bool {
         tracing::debug!("exists: id={}", id);
 
         let q = sqlx::query("SELECT EXISTS(SELECT 1 FROM tasks WHERE id = $1)");
@@ -143,10 +125,9 @@ impl TaskRepo {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::{
         domain::Status,
-        repo::{tests, StoryRepo},
+        repo::{tests, Repo},
     };
     use std::sync::Arc;
 
@@ -160,47 +141,43 @@ mod tests {
         let image = RunnableImage::from(Postgres::default()).with_tag("16-alpine");
         let container = image.start().await;
         let pool = tests::setup_pg_pool(&container).await;
-        let story_repo = StoryRepo::new(Arc::clone(&pool));
-
-        // Set up repo under test
-        let task_repo = TaskRepo::new(Arc::clone(&pool));
+        let repo = Repo::new(Arc::clone(&pool));
 
         // Set up a story to put tasks under
         let name = "Books To Read".to_string();
-        let story_id = story_repo.create(name.clone()).await.unwrap().id;
+        let story_id = repo.create_story(name.clone()).await.unwrap().id;
 
         // Create task, ensuring status is incomplete
-        let task = task_repo
-            .create(story_id.clone(), "Suttree".to_string())
+        let task = repo
+            .create_task(story_id.clone(), "Suttree".to_string())
             .await
             .unwrap();
         assert_eq!(task.status, Status::Incomplete);
 
         // Assert task exists
-        assert!(task_repo.exists(task.id).await);
+        assert!(repo.task_exists(task.id).await);
 
         // Set task status to complete
-        task_repo
-            .update(task.id, task.name, Status::Complete)
+        repo.update_task(task.id, task.name, Status::Complete)
             .await
             .unwrap();
 
         // Fetch task and assert status was updated
-        let task = task_repo.fetch(task.id).await.unwrap();
+        let task = repo.fetch_task(task.id).await.unwrap();
         assert_eq!(task.status, Status::Complete);
 
         // Query tasks for story.
-        let tasks = task_repo.list(story_id.clone()).await.unwrap();
+        let tasks = repo.list_tasks(story_id.clone()).await.unwrap();
         assert_eq!(tasks.len(), 1);
 
         // Delete the task
-        let rows = task_repo.delete(task.id).await.unwrap();
+        let rows = repo.delete_task(task.id).await.unwrap();
         assert_eq!(rows, 1);
 
         // Assert task was deleted
-        assert!(!task_repo.exists(task.id).await);
+        assert!(!repo.task_exists(task.id).await);
 
         // Cleanup
-        assert!(story_repo.delete(story_id).await.unwrap() > 0);
+        assert!(repo.delete_story(story_id).await.unwrap() > 0);
     }
 }
