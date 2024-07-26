@@ -55,8 +55,7 @@ async fn update_task(
 async fn delete_task(Path(id): Path<i32>, State(ctx): State<Arc<Ctx>>) -> StatusCode {
     tracing::info!("DELETE /tasks/{}", id);
     if let Err(err) = ctx.tasks.delete(id).await {
-        StatusCode::from(err)
-    } else {
-        StatusCode::NO_CONTENT
+        return StatusCode::from(err);
     }
+    StatusCode::NO_CONTENT
 }

@@ -85,8 +85,8 @@ async fn update_story(
 /// Delete a story by id
 async fn delete_story(Path(id): Path<i32>, State(ctx): State<Arc<Ctx>>) -> StatusCode {
     tracing::info!("DELETE /stories/{}", id);
-    match ctx.stories.delete(id).await {
-        Ok(()) => StatusCode::NO_CONTENT,
-        Err(err) => StatusCode::from(err),
+    if let Err(err) = ctx.stories.delete(id).await {
+        return StatusCode::from(err);
     }
+    StatusCode::NO_CONTENT
 }
