@@ -1,7 +1,9 @@
+use super::sql;
 use super::Repo;
 use crate::{domain::Story, Error, Result};
 use futures_util::TryStreamExt;
 use sqlx::{postgres::PgRow, FromRow, Row};
+use stripmargin::StripMargin;
 
 /// Map sqlx rows to story domain objects.
 impl FromRow<'_, PgRow> for Story {
@@ -17,10 +19,15 @@ impl FromRow<'_, PgRow> for Story {
 impl Repo {
     /// Select a story by id
     pub async fn fetch_story(&self, id: i32) -> Result<Story> {
-        tracing::debug!("fetch: id={}", id);
+        tracing::debug!("fetch_story: id={}", id);
 
-        let q = sqlx::query_as("SELECT id, name FROM stories WHERE id = $1");
-        let maybe_story = q.bind(id).fetch_optional(self.db_ref()).await?;
+        let query = sql::story::FETCH.strip_margin();
+        tracing::debug!("sql: {}", query);
+
+        let maybe_story = sqlx::query_as(&query)
+            .bind(id)
+            .fetch_optional(self.db_ref())
+            .await?;
 
         match maybe_story {
             Some(story) => Ok(story),
@@ -30,54 +37,70 @@ impl Repo {
 
     /// Select a page of stories.
     pub async fn list_stories(&self, page_id: i32, page_size: i32) -> Result<Vec<Story>> {
-        tracing::debug!("list: page_id={}", page_id);
+        tracing::debug!("list_stories: page_id={}", page_id);
 
-        let q = sqlx::query(
-            r#"SELECT id, name FROM stories WHERE id <= $1
-            ORDER BY id desc LIMIT $2"#,
-        );
-        let mut result_set = q.bind(page_id).bind(page_size).fetch(self.db_ref());
+        let query = sql::story::LIST.strip_margin();
+        tracing::debug!("sql: {}", query);
 
-        let mut result = Vec::with_capacity(page_size as usize);
+        let mut result_set = sqlx::query(&query)
+            .bind(page_id)
+            .bind(page_size)
+            .fetch(self.db_ref());
+
+        let mut stories = Vec::with_capacity(page_size as usize);
+
         while let Some(row) = result_set.try_next().await? {
             let story = Story::from_row(&row)?;
-            result.push(story);
+            stories.push(story);
         }
 
-        Ok(result)
+        Ok(stories)
     }
 
     /// Insert a new story
     pub async fn create_story(&self, name: String) -> Result<Story> {
-        tracing::debug!("create: name={}", name);
+        tracing::debug!("create_story: name={}", name);
 
-        let q = sqlx::query_as("INSERT INTO stories (name) VALUES ($1) RETURNING id, name");
-        let story = q.bind(name).fetch_one(self.db_ref()).await?;
+        let query = sql::story::CREATE.strip_margin();
+        tracing::debug!("sql: {}", query);
+
+        let story = sqlx::query_as(&query)
+            .bind(name)
+            .fetch_one(self.db_ref())
+            .await?;
 
         Ok(story)
     }
 
     /// Update story name
     pub async fn update_story(&self, id: i32, name: String) -> Result<Story> {
-        tracing::debug!("update: id={}, name={}", id, name);
+        tracing::debug!("update_story: id={}, name={}", id, name);
 
-        let q = sqlx::query_as("UPDATE stories SET name = $1 WHERE id = $2 RETURNING id, name");
-        let story = q.bind(name).bind(id).fetch_one(self.db_ref()).await?;
+        let query = sql::story::UPDATE.strip_margin();
+        tracing::debug!("sql: {}", query);
+
+        let story = sqlx::query_as(&query)
+            .bind(name)
+            .bind(id)
+            .fetch_one(self.db_ref())
+            .await?;
 
         Ok(story)
     }
 
     /// Delete a story and its tasks.
     pub async fn delete_story(&self, id: i32) -> Result<u64> {
-        tracing::debug!("delete: id={}", id);
+        tracing::debug!("delete_story: id={}", id);
 
         let mut tx = self.db.begin().await?;
 
-        let qdt = sqlx::query("DELETE FROM tasks WHERE story_id = $1");
-        qdt.bind(id).execute(&mut *tx).await?;
+        let query = sql::task::DELETE_BY_STORY.strip_margin();
+        tracing::debug!("sql: {}", query);
+        sqlx::query(&query).bind(id).execute(&mut *tx).await?;
 
-        let qds = sqlx::query("DELETE FROM stories WHERE id = $1");
-        let result = qds.bind(id).execute(&mut *tx).await?;
+        let query = sql::story::DELETE.strip_margin();
+        tracing::debug!("sql: {}", query);
+        let result = sqlx::query(&query).bind(id).execute(&mut *tx).await?;
 
         tx.commit().await?;
 
@@ -86,11 +109,12 @@ impl Repo {
 
     /// Check whether a story exists.
     pub async fn story_exists(&self, id: i32) -> bool {
-        tracing::debug!("exists: id={}", id);
+        tracing::debug!("story_exists: id={}", id);
 
-        let q = sqlx::query("SELECT EXISTS(SELECT 1 FROM stories WHERE id = $1)");
-        let result = q.bind(id).fetch_one(self.db_ref()).await;
+        let query = sql::story::EXISTS.strip_margin();
+        tracing::debug!("sql: {}", query);
 
+        let result = sqlx::query(&query).bind(id).fetch_one(self.db_ref()).await;
         if let Ok(row) = result {
             row.try_get::<bool, _>("exists").unwrap_or_default()
         } else {

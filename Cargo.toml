@@ -25,6 +25,7 @@ sqlx = { version = "0.8", features = [
     "postgres",
     "migrate",
 ] }
+stripmargin = "0.1.1"
 strum = "0.26"
 strum_macros = "0.26"
 thiserror = "1"

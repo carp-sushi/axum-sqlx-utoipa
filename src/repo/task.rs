@@ -1,3 +1,4 @@
+use super::sql;
 use super::Repo;
 use crate::{
     domain::{Status, Task},
@@ -6,6 +7,10 @@ use crate::{
 use futures_util::TryStreamExt;
 use sqlx::{postgres::PgRow, FromRow, Row};
 use std::str::FromStr;
+use stripmargin::StripMargin;
+
+// Put some reasonable upper limit when querying tasks for a story.
+const MAX_TASKS: i16 = 500;
 
 /// Map sqlx rows to task domain objects.
 impl FromRow<'_, PgRow> for Task {
@@ -33,10 +38,15 @@ impl FromRow<'_, PgRow> for Task {
 impl Repo {
     /// Get a task by id
     pub async fn fetch_task(&self, id: i32) -> Result<Task> {
-        tracing::debug!("fetch: id={}", id);
+        tracing::debug!("fetch_task: id={}", id);
 
-        let q = sqlx::query_as("SELECT id, story_id, name, status FROM tasks WHERE id = $1");
-        let task_option = q.bind(id).fetch_optional(self.db_ref()).await?;
+        let query = sql::task::FETCH.strip_margin();
+        tracing::debug!("sql: {}", query);
+
+        let task_option = sqlx::query_as(&query)
+            .bind(id)
+            .fetch_optional(self.db_ref())
+            .await?;
 
         match task_option {
             Some(task) => Ok(task),
@@ -46,16 +56,18 @@ impl Repo {
 
     /// Select tasks for a story
     pub async fn list_tasks(&self, story_id: i32) -> Result<Vec<Task>> {
-        tracing::debug!("list: story_id={}", story_id);
+        tracing::debug!("list_tasks: story_id={}", story_id);
 
-        let q = sqlx::query(
-            r#"SELECT id, story_id, name, status FROM tasks WHERE story_id = $1
-            ORDER BY id LIMIT 1000"#,
-        );
-        let mut result_set = q.bind(story_id).fetch(self.db_ref());
+        let query = sql::task::LIST.strip_margin();
+        tracing::debug!("sql: {}", query);
 
-        // Assume a hard limit on the number of tasks under a story.
-        let mut tasks = Vec::with_capacity(1000);
+        let mut result_set = sqlx::query(&query)
+            .bind(story_id)
+            .bind(MAX_TASKS)
+            .fetch(self.db_ref());
+
+        let mut tasks = Vec::with_capacity(MAX_TASKS as usize);
+
         while let Some(row) = result_set.try_next().await? {
             let task = Task::from_row(&row)?;
             tasks.push(task);
@@ -66,27 +78,28 @@ impl Repo {
 
     /// Insert a new task
     pub async fn create_task(&self, story_id: i32, name: String) -> Result<Task> {
-        tracing::debug!("create: story_id={}, name={}", story_id, name);
+        tracing::debug!("create_task: story_id={}, name={}", story_id, name);
 
-        let q = sqlx::query_as(
-            r#"INSERT INTO tasks (story_id, name)
-            VALUES ($1, $2) RETURNING id, story_id, name, status"#,
-        );
-        let task = q.bind(story_id).bind(name).fetch_one(self.db_ref()).await?;
+        let query = sql::task::CREATE.strip_margin();
+        tracing::debug!("sql: {}", query);
+
+        let task = sqlx::query_as(&query)
+            .bind(story_id)
+            .bind(name)
+            .fetch_one(self.db_ref())
+            .await?;
 
         Ok(task)
     }
 
     /// Update task name and status.
     pub async fn update_task(&self, id: i32, name: String, status: Status) -> Result<Task> {
-        tracing::debug!("update: id={}, name={}, status={}", id, name, status);
+        tracing::debug!("update_task: id={}, name={}, status={}", id, name, status);
 
-        let q = sqlx::query_as(
-            r#"UPDATE tasks SET name = $1, status = $2 WHERE id = $3
-            RETURNING id, story_id, name, status"#,
-        );
+        let query = sql::task::UPDATE.strip_margin();
+        tracing::debug!("sql: {}", query);
 
-        let task = q
+        let task = sqlx::query_as(&query)
             .bind(name)
             .bind(status.to_string())
             .bind(id)
@@ -98,22 +111,25 @@ impl Repo {
 
     /// Delete a task.
     pub async fn delete_task(&self, id: i32) -> Result<u64> {
-        tracing::debug!("delete: id={}", id);
+        tracing::debug!("delete_task: id={}", id);
 
-        let result = sqlx::query("DELETE FROM tasks WHERE id = $1")
-            .bind(id)
-            .execute(self.db_ref())
-            .await?;
+        let query = sql::task::DELETE.strip_margin();
+        tracing::debug!("sql: {}", query);
+
+        let q = sqlx::query(&query);
+        let result = q.bind(id).execute(self.db_ref()).await?;
 
         Ok(result.rows_affected())
     }
 
     /// Check whether a task exists.
     pub async fn task_exists(&self, id: i32) -> bool {
-        tracing::debug!("exists: id={}", id);
+        tracing::debug!("task_exists: id={}", id);
 
-        let q = sqlx::query("SELECT EXISTS(SELECT 1 FROM tasks WHERE id = $1)");
-        let result = q.bind(id).fetch_one(self.db_ref()).await;
+        let query = sql::task::EXISTS.strip_margin();
+        tracing::debug!("sql: {}", query);
+
+        let result = sqlx::query(&query).bind(id).fetch_one(self.db_ref()).await;
 
         if let Ok(row) = result {
             row.try_get::<bool, _>("exists").unwrap_or_default()
