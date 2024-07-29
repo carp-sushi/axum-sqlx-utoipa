@@ -1,5 +1,5 @@
 use crate::{
-    api::dto::StoryBody,
+    api::dto::story::StoryBody,
     api::page::{Page, PageParams, PageToken},
     api::Ctx,
     Result,
@@ -12,9 +12,6 @@ use axum::{
     Json, Router,
 };
 use std::sync::Arc;
-
-// Define a reasonable page size when a param value was not provided.
-const DEFAULT_PAGE_SIZE: i32 = 50;
 
 /// API routes for stories
 #[rustfmt::skip]
@@ -41,9 +38,8 @@ async fn get_stories(
 
     let q = params.unwrap_or_default();
     let page_id = PageToken::decode_or(&q.page_token, i32::MAX)?;
-    let page_size = q.page_size.unwrap_or(DEFAULT_PAGE_SIZE);
 
-    let (next_page, stories) = ctx.stories.list(page_id, page_size).await?;
+    let (next_page, stories) = ctx.stories.list(page_id, q.page_size()).await?;
     let page = Page::new(PageToken::encode(next_page), stories);
 
     Ok(Json(page))

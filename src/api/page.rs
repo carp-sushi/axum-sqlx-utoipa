@@ -4,11 +4,26 @@ use borsh::{BorshDeserialize, BorshSerialize};
 use serde::{Deserialize, Serialize};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
+// Define a reasonable default page size.
+const DEFAULT_PAGE_SIZE: i32 = 100;
+
+// Page size limits
+const MIN_PAGE_SIZE: i32 = 10;
+const MAX_PAGE_SIZE: i32 = 1000;
+
 /// The query parameters for getting a page of domain objects from a list endpoint.
 #[derive(Debug, Deserialize, Default)]
 pub(crate) struct PageParams {
     pub page_token: Option<String>,
     pub page_size: Option<i32>,
+}
+
+impl PageParams {
+    pub fn page_size(&self) -> i32 {
+        self.page_size
+            .unwrap_or(DEFAULT_PAGE_SIZE)
+            .clamp(MIN_PAGE_SIZE, MAX_PAGE_SIZE)
+    }
 }
 
 /// A page of domain objects

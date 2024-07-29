@@ -4,11 +4,11 @@ use std::sync::Arc;
 mod ctx;
 mod dto;
 mod page;
-mod status;
-mod story;
-mod task;
+mod routes;
 
 pub use ctx::Ctx;
+
+use routes::{status, story, task};
 
 /// The top-level API
 pub struct Api {

@@ -1,5 +1,4 @@
-use super::sql;
-use super::Repo;
+use super::{sql, Repo};
 use crate::{domain::Story, Error, Result};
 use futures_util::TryStreamExt;
 use sqlx::{postgres::PgRow, FromRow, Row};

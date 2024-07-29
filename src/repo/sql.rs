@@ -1,5 +1,5 @@
 #[rustfmt::skip]
-pub mod story {
+pub(crate) mod story {
     pub const FETCH: &str = r#"
         | SELECT id, name
         | FROM stories
@@ -33,7 +33,7 @@ pub mod story {
 }
 
 #[rustfmt::skip]
-pub mod task {
+pub(crate) mod task {
     pub const FETCH: &str = r#"
         | SELECT id, story_id, name, status
         | FROM tasks

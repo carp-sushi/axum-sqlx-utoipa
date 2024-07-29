@@ -1,5 +1,4 @@
-use super::sql;
-use super::Repo;
+use super::{sql, Repo};
 use crate::{
     domain::{Status, Task},
     Error, Result,

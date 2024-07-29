@@ -6,23 +6,21 @@ use std::sync::Arc;
 mod create_story;
 mod delete_story;
 mod get_stories;
-mod get_story;
 mod update_story;
 
 // Use cases
 use create_story::CreateStory;
 use delete_story::DeleteStory;
 use get_stories::GetStories;
-use get_story::GetStory;
 use update_story::UpdateStory;
 
 /// A high-level API for managaing stories.
 pub struct StoryService {
     create_story: CreateStory,
     delete_story: DeleteStory,
-    get_story: GetStory,
     get_stories: GetStories,
     update_story: UpdateStory,
+    repo: Arc<Repo>,
 }
 
 impl StoryService {
@@ -31,9 +29,9 @@ impl StoryService {
         Self {
             create_story: CreateStory::new(repo.clone()),
             delete_story: DeleteStory::new(repo.clone()),
-            get_story: GetStory::new(repo.clone()),
             get_stories: GetStories::new(repo.clone()),
-            update_story: UpdateStory::new(repo),
+            update_story: UpdateStory::new(repo.clone()),
+            repo,
         }
     }
 
@@ -49,7 +47,9 @@ impl StoryService {
 
     /// Get a story
     pub async fn get(&self, id: i32) -> Result<Story> {
-        self.get_story.execute(id).await
+        // Don't need a use case when a simple repo call will suffice.
+        tracing::debug!("get: id={}", id);
+        self.repo.fetch_story(id).await
     }
 
     /// Get a page of stories

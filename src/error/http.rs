@@ -31,6 +31,7 @@ impl From<Error> for StatusCode {
         status
     }
 }
+
 /// Get the http status code for an error.
 fn http_status_code(err: &Error) -> StatusCode {
     match err {

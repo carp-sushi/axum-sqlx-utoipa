@@ -1,5 +1,5 @@
 use crate::{
-    api::dto::{CreateTaskBody, PatchTaskBody},
+    api::dto::task::{CreateTaskBody, PatchTaskBody},
     api::Ctx,
     domain::Task,
     Result,

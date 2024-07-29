@@ -2,8 +2,7 @@ use crate::Error;
 use sqlx::postgres::PgPool;
 use std::sync::Arc;
 
-pub mod sql;
-
+mod sql;
 mod story;
 mod task;
 
