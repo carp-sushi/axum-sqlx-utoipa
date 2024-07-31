@@ -6,19 +6,10 @@ use crate::{
 };
 use async_trait::async_trait;
 use futures_util::TryFutureExt;
-use std::sync::Arc;
+use std::{ops::Deref, sync::Arc};
 
 /// Update tasks.
-pub struct UpdateTask {
-    repo: Arc<Repo>,
-}
-
-impl UpdateTask {
-    /// Constructor
-    pub fn new(repo: Arc<Repo>) -> Self {
-        Self { repo }
-    }
-}
+pub struct UpdateTask(pub Arc<Repo>);
 
 #[async_trait]
 impl UseCase for UpdateTask {
@@ -39,13 +30,20 @@ impl UseCase for UpdateTask {
         }
 
         // Fetch the task and update it.
-        self.repo
-            .fetch_task(id)
+        self.fetch_task(id)
             .and_then(|task| {
                 let name = name_opt.unwrap_or(task.name);
                 let status = status_opt.unwrap_or(task.status);
-                self.repo.update_task(id, name, status)
+                self.update_task(id, name, status)
             })
             .await
+    }
+}
+
+// Allows calls to wrapped repo at use case level.
+impl Deref for UpdateTask {
+    type Target = Arc<Repo>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }

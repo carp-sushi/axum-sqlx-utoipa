@@ -1,19 +1,10 @@
 use crate::{domain::Task, repo::Repo, service::UseCase, Result};
 use async_trait::async_trait;
 use futures_util::TryFutureExt;
-use std::sync::Arc;
+use std::{ops::Deref, sync::Arc};
 
 /// Create a new task.
-pub struct CreateTask {
-    repo: Arc<Repo>,
-}
-
-impl CreateTask {
-    /// Constructor
-    pub fn new(repo: Arc<Repo>) -> Self {
-        Self { repo }
-    }
-}
+pub struct CreateTask(pub Arc<Repo>);
 
 #[async_trait]
 impl UseCase for CreateTask {
@@ -28,9 +19,16 @@ impl UseCase for CreateTask {
         tracing::debug!("execute: story_id={}, name={}", story_id, name);
 
         // Verify the parent story exists, then create the task
-        self.repo
-            .fetch_story(story_id)
-            .and_then(|_| self.repo.create_task(story_id, name))
+        self.fetch_story(story_id)
+            .and_then(|_| self.create_task(story_id, name))
             .await
+    }
+}
+
+// Allows calls to wrapped repo at use case level.
+impl Deref for CreateTask {
+    type Target = Arc<Repo>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }

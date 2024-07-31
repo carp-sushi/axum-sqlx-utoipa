@@ -1,18 +1,9 @@
 use crate::{domain::Task, repo::Repo, service::UseCase, Result};
 use async_trait::async_trait;
-use std::sync::Arc;
+use std::{ops::Deref, sync::Arc};
 
 /// Get story tasks.
-pub struct GetTasks {
-    repo: Arc<Repo>,
-}
-
-impl GetTasks {
-    /// Constructor
-    pub fn new(repo: Arc<Repo>) -> Self {
-        Self { repo }
-    }
-}
+pub struct GetTasks(pub Arc<Repo>);
 
 #[async_trait]
 impl UseCase for GetTasks {
@@ -28,16 +19,24 @@ impl UseCase for GetTasks {
         tracing::debug!("execute: story_id={}", story_id);
 
         // Try and query for tasks first.
-        let tasks = self.repo.list_tasks(story_id).await?;
+        let tasks = self.list_tasks(story_id).await?;
 
         // When zero tasks were returned, check whether the story exists.
         // This is an optimization; if tasks were returned, the story DOES exist
         // and no further querying is required.
         if tasks.is_empty() {
             // Only care about errors here
-            let _ = self.repo.fetch_story(story_id).await?;
+            let _ = self.fetch_story(story_id).await?;
         }
 
         Ok(tasks)
+    }
+}
+
+// Allows calls to wrapped repo at use case level.
+impl Deref for GetTasks {
+    type Target = Arc<Repo>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }

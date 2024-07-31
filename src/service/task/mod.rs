@@ -9,33 +9,36 @@ use std::sync::Arc;
 // Use case mods
 mod create_task;
 mod delete_task;
+mod get_task;
 mod get_tasks;
 mod update_task;
 
 // Use cases
 use create_task::CreateTask;
 use delete_task::DeleteTask;
+use get_task::GetTask;
 use get_tasks::GetTasks;
 use update_task::UpdateTask;
 
 /// A high-level API for managaing tasks.
+/// This service is composed of use cases.
 pub struct TaskService {
     create_task: CreateTask,
     delete_task: DeleteTask,
+    get_task: GetTask,
     get_tasks: GetTasks,
     update_task: UpdateTask,
-    repo: Arc<Repo>,
 }
 
 impl TaskService {
     /// Create a new task service
     pub fn new(repo: Arc<Repo>) -> Self {
         Self {
-            create_task: CreateTask::new(repo.clone()),
-            delete_task: DeleteTask::new(repo.clone()),
-            update_task: UpdateTask::new(repo.clone()),
-            get_tasks: GetTasks::new(repo.clone()),
-            repo,
+            create_task: CreateTask(repo.clone()),
+            delete_task: DeleteTask(repo.clone()),
+            get_task: GetTask(repo.clone()),
+            get_tasks: GetTasks(repo.clone()),
+            update_task: UpdateTask(repo.clone()),
         }
     }
 
@@ -52,9 +55,7 @@ impl TaskService {
 
     /// Get a task
     pub async fn get(&self, id: i32) -> Result<Task> {
-        // Don't need a use case when a simple repo call will suffice.
-        tracing::debug!("get: id={}", id);
-        self.repo.fetch_task(id).await
+        self.get_task.execute(id).await
     }
 
     /// Get tasks for a story
