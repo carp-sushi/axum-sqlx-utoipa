@@ -25,7 +25,7 @@ pub fn routes() -> Router<Arc<Ctx>> {
 /// Get story by id
 async fn get_story(Path(id): Path<i32>, State(ctx): State<Arc<Ctx>>) -> Result<impl IntoResponse> {
     tracing::info!("GET /stories/{}", id);
-    let story = ctx.stories.get(id).await?;
+    let story = ctx.stories.fetch_story(id).await?;
     Ok(Json(story))
 }
 
@@ -62,7 +62,7 @@ async fn create_story(
 ) -> Result<impl IntoResponse> {
     tracing::info!("POST /stories");
     let name = body.validate()?;
-    let story = ctx.stories.create(name).await?;
+    let story = ctx.stories.create_story(name).await?;
     Ok((StatusCode::CREATED, Json(story)))
 }
 

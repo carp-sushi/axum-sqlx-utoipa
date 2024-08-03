@@ -105,21 +105,6 @@ impl Repo {
 
         Ok(result.rows_affected())
     }
-
-    /// Check whether a story exists.
-    pub async fn story_exists(&self, id: i32) -> bool {
-        tracing::debug!("story_exists: id={}", id);
-
-        let query = sql::story::EXISTS.strip_margin();
-        tracing::debug!("sql: {}", query);
-
-        let result = sqlx::query(&query).bind(id).fetch_one(self.db_ref()).await;
-        if let Ok(row) = result {
-            row.try_get::<bool, _>("exists").unwrap_or_default()
-        } else {
-            false
-        }
-    }
 }
 
 #[cfg(test)]
@@ -144,9 +129,6 @@ mod tests {
         let story = repo.create_story(name.clone()).await.unwrap();
         assert_eq!(name, story.name);
 
-        // Assert the story exists
-        assert!(repo.story_exists(story.id).await);
-
         // Query stories page
         let stories = repo.list_stories(i32::MAX, 10).await.unwrap();
         assert_eq!(stories.len(), 1);
@@ -164,6 +146,6 @@ mod tests {
         assert_eq!(rows, 1);
 
         // Assert story was deleted
-        assert!(!repo.story_exists(story.id).await);
+        assert!(repo.fetch_story(story.id).await.is_err());
     }
 }

@@ -120,22 +120,6 @@ impl Repo {
 
         Ok(result.rows_affected())
     }
-
-    /// Check whether a task exists.
-    pub async fn task_exists(&self, id: i32) -> bool {
-        tracing::debug!("task_exists: id={}", id);
-
-        let query = sql::task::EXISTS.strip_margin();
-        tracing::debug!("sql: {}", query);
-
-        let result = sqlx::query(&query).bind(id).fetch_one(self.db_ref()).await;
-
-        if let Ok(row) = result {
-            row.try_get::<bool, _>("exists").unwrap_or_default()
-        } else {
-            false
-        }
-    }
 }
 
 #[cfg(test)]
@@ -170,7 +154,7 @@ mod tests {
         assert_eq!(task.status, Status::Incomplete);
 
         // Assert task exists
-        assert!(repo.task_exists(task.id).await);
+        assert!(repo.fetch_task(task.id).await.is_ok());
 
         // Set task status to complete
         repo.update_task(task.id, task.name, Status::Complete)
@@ -190,7 +174,7 @@ mod tests {
         assert_eq!(rows, 1);
 
         // Assert task was deleted
-        assert!(!repo.task_exists(task.id).await);
+        assert!(repo.fetch_task(task.id).await.is_err());
 
         // Cleanup
         assert!(repo.delete_story(story_id).await.unwrap() > 0);

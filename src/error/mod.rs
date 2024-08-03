@@ -7,7 +7,7 @@ mod http;
 #[derive(thiserror::Error, Debug, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Error {
-    #[error("invalid arguments")]
+    #[error("invalid arguments: {messages:?}")]
     InvalidArgs { messages: Vec<String> },
     #[error("internal error: {message}")]
     Internal { message: String },

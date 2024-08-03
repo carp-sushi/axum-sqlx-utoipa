@@ -24,7 +24,7 @@ pub fn routes() -> Router<Arc<Ctx>> {
 /// Get task by id
 async fn get_task(Path(id): Path<i32>, State(ctx): State<Arc<Ctx>>) -> Result<Json<Task>> {
     tracing::info!("GET /tasks/{}", id);
-    let task = ctx.tasks.get(id).await?;
+    let task = ctx.tasks.fetch_task(id).await?;
     Ok(Json(task))
 }
 

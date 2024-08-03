@@ -25,11 +25,6 @@ pub(crate) mod story {
 
     pub const DELETE: &str = r#"
         | DELETE FROM stories WHERE id = $1"#;
-
-    pub const EXISTS: &str = r#"
-        | SELECT EXISTS(
-        |   SELECT 1 FROM stories WHERE id = $1
-        | )"#;
 }
 
 #[rustfmt::skip]
@@ -61,9 +56,4 @@ pub(crate) mod task {
 
     pub const DELETE_BY_STORY: &str = r#"
         | DELETE FROM tasks WHERE story_id = $1"#;
-
-    pub const EXISTS: &str = r#"
-        | SELECT EXISTS(
-        |   SELECT 1 FROM tasks WHERE id = $1
-        | )"#;
 }
