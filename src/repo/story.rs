@@ -18,17 +18,14 @@ impl FromRow<'_, PgRow> for Story {
 impl Repo {
     /// Select a story by id
     pub async fn fetch_story(&self, id: i32) -> Result<Story> {
-        tracing::debug!("fetch_story: id={}", id);
-
         let query = sql::story::FETCH.strip_margin();
-        tracing::debug!("sql: {}", query);
 
-        let maybe_story = sqlx::query_as(&query)
+        let story_opt = sqlx::query_as(&query)
             .bind(id)
             .fetch_optional(self.db_ref())
             .await?;
 
-        match maybe_story {
+        match story_opt {
             Some(story) => Ok(story),
             None => Err(Error::not_found(format!("story not found: {}", id))),
         }
@@ -36,10 +33,7 @@ impl Repo {
 
     /// Select a page of stories.
     pub async fn list_stories(&self, page_id: i32, page_size: i32) -> Result<Vec<Story>> {
-        tracing::debug!("list_stories: page_id={}", page_id);
-
         let query = sql::story::LIST.strip_margin();
-        tracing::debug!("sql: {}", query);
 
         let mut result_set = sqlx::query(&query)
             .bind(page_id)
@@ -58,10 +52,7 @@ impl Repo {
 
     /// Insert a new story
     pub async fn create_story(&self, name: String) -> Result<Story> {
-        tracing::debug!("create_story: name={}", name);
-
         let query = sql::story::CREATE.strip_margin();
-        tracing::debug!("sql: {}", query);
 
         let story = sqlx::query_as(&query)
             .bind(name)
@@ -73,10 +64,7 @@ impl Repo {
 
     /// Update story name
     pub async fn update_story(&self, id: i32, name: String) -> Result<Story> {
-        tracing::debug!("update_story: id={}, name={}", id, name);
-
         let query = sql::story::UPDATE.strip_margin();
-        tracing::debug!("sql: {}", query);
 
         let story = sqlx::query_as(&query)
             .bind(name)
@@ -89,16 +77,12 @@ impl Repo {
 
     /// Delete a story and its tasks.
     pub async fn delete_story(&self, id: i32) -> Result<u64> {
-        tracing::debug!("delete_story: id={}", id);
-
         let mut tx = self.db.begin().await?;
 
         let query = sql::task::DELETE_BY_STORY.strip_margin();
-        tracing::debug!("sql: {}", query);
         sqlx::query(&query).bind(id).execute(&mut *tx).await?;
 
         let query = sql::story::DELETE.strip_margin();
-        tracing::debug!("sql: {}", query);
         let result = sqlx::query(&query).bind(id).execute(&mut *tx).await?;
 
         tx.commit().await?;

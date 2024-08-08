@@ -7,7 +7,8 @@ use sqlx_todos::{
     api::{Api, Ctx},
     config::Config,
 };
-use std::{env, error::Error, sync::Arc};
+use std::{error::Error, sync::Arc};
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 // Embed migrations into the server binary.
 pub static MIGRATOR: Migrator = sqlx::migrate!();
@@ -18,11 +19,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
     dotenv().ok();
 
     // Init tracing
-    if env::var("DEV_MODE").is_ok() {
-        tracing_subscriber::fmt::init();
-    } else {
-        tracing_subscriber::fmt().json().init();
-    }
+    tracing_subscriber::registry()
+        .with(tracing_subscriber::EnvFilter::from_default_env())
+        .with(tracing_subscriber::fmt::layer())
+        .init();
 
     // Load config
     let config = Arc::new(Config::default());
@@ -34,7 +34,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .connect(config.db_connection_string().as_ref())
         .await?;
 
-    tracing::info!("Running migrations");
+    tracing::debug!("Running migrations");
     MIGRATOR.run(&pool).await?;
 
     // Set up API

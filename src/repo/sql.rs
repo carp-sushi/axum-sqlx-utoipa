@@ -41,8 +41,8 @@ pub(crate) mod task {
         | ORDER BY id LIMIT $2"#;
 
     pub const CREATE: &str = r#"
-        | INSERT INTO tasks (story_id, name)
-        | VALUES ($1, $2)
+        | INSERT INTO tasks (story_id, name, status)
+        | VALUES ($1, $2, $3)
         | RETURNING id, story_id, name, status"#;
 
     pub const UPDATE: &str = r#"

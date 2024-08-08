@@ -3,7 +3,6 @@ pub mod config;
 pub mod domain;
 pub mod error;
 pub mod repo;
-pub mod service;
 
 /// Expose error at the top level
 pub use error::Error;

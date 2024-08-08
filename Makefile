@@ -5,6 +5,10 @@ all: fmt build test lint
 fmt:
 	@cargo fmt --all
 
+.PHONY: check
+check:
+	@cargo check
+
 .PHONY: build
 build:
 	@cargo build

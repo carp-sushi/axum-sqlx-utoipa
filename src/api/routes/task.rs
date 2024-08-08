@@ -11,6 +11,7 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
+use futures_util::TryFutureExt;
 use std::sync::Arc;
 
 /// API routes for tasks
@@ -23,8 +24,7 @@ pub fn routes() -> Router<Arc<Ctx>> {
 
 /// Get task by id
 async fn get_task(Path(id): Path<i32>, State(ctx): State<Arc<Ctx>>) -> Result<Json<Task>> {
-    tracing::info!("GET /tasks/{}", id);
-    let task = ctx.tasks.fetch_task(id).await?;
+    let task = ctx.fetch_task(id).await?;
     Ok(Json(task))
 }
 
@@ -33,9 +33,11 @@ async fn create_task(
     State(ctx): State<Arc<Ctx>>,
     Json(body): Json<CreateTaskBody>,
 ) -> Result<impl IntoResponse> {
-    tracing::info!("POST /tasks");
-    let (story_id, name) = body.validate()?;
-    let task = ctx.tasks.create(story_id, name).await?;
+    let (story_id, name, status) = body.validate()?;
+    let task = ctx
+        .fetch_story(story_id)
+        .and_then(|_| ctx.create_task(story_id, name, status))
+        .await?;
     Ok((StatusCode::CREATED, Json(task)))
 }
 
@@ -45,16 +47,21 @@ async fn update_task(
     State(ctx): State<Arc<Ctx>>,
     Json(body): Json<PatchTaskBody>,
 ) -> Result<Json<Task>> {
-    tracing::info!("PATCH /tasks/{}", id);
-    let (name, status) = body.validate()?;
-    let task = ctx.tasks.update(id, name, status).await?;
+    let (name_opt, status_opt) = body.validate()?;
+    let task = ctx
+        .fetch_task(id)
+        .and_then(|task| {
+            let name = name_opt.unwrap_or(task.name);
+            let status = status_opt.unwrap_or(task.status);
+            ctx.update_task(id, name, status)
+        })
+        .await?;
     Ok(Json(task))
 }
 
 /// Delete a task by id
 async fn delete_task(Path(id): Path<i32>, State(ctx): State<Arc<Ctx>>) -> StatusCode {
-    tracing::info!("DELETE /tasks/{}", id);
-    if let Err(err) = ctx.tasks.delete(id).await {
+    if let Err(err) = ctx.fetch_task(id).and_then(|_| ctx.delete_task(id)).await {
         return StatusCode::from(err);
     }
     StatusCode::NO_CONTENT

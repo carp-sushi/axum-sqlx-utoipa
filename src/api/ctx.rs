@@ -1,17 +1,11 @@
-use crate::{
-    repo::Repo,
-    service::{story::StoryService, task::TaskService},
-};
+use crate::repo::Repo;
 use sqlx::postgres::PgPool;
-use std::sync::Arc;
+use std::{ops::Deref, sync::Arc};
 
 /// API context
 #[derive(Clone)]
 pub struct Ctx {
-    /// Story service
-    pub stories: Arc<StoryService>,
-    /// Task service
-    pub tasks: Arc<TaskService>,
+    repo: Arc<Repo>,
 }
 
 impl Ctx {
@@ -19,15 +13,15 @@ impl Ctx {
     pub fn new(db: Arc<PgPool>) -> Self {
         // Repo
         let repo = Arc::new(Repo::new(db.clone()));
-
-        // Services (organize/group functionality by domain).
-        let task_service = TaskService::new(repo.clone());
-        let story_service = StoryService::new(repo);
-
         // Ctx
-        Self {
-            stories: Arc::new(story_service),
-            tasks: Arc::new(task_service),
-        }
+        Self { repo }
+    }
+}
+
+// Allow access to calls on the inner repo.
+impl Deref for Ctx {
+    type Target = Arc<Repo>;
+    fn deref(&self) -> &Self::Target {
+        &self.repo
     }
 }

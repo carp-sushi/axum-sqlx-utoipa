@@ -11,6 +11,7 @@ use axum::{
     routing::get,
     Json, Router,
 };
+use futures_util::TryFutureExt;
 use std::sync::Arc;
 
 /// API routes for stories
@@ -24,8 +25,7 @@ pub fn routes() -> Router<Arc<Ctx>> {
 
 /// Get story by id
 async fn get_story(Path(id): Path<i32>, State(ctx): State<Arc<Ctx>>) -> Result<impl IntoResponse> {
-    tracing::info!("GET /stories/{}", id);
-    let story = ctx.stories.fetch_story(id).await?;
+    let story = ctx.fetch_story(id).await?;
     Ok(Json(story))
 }
 
@@ -34,14 +34,11 @@ async fn get_stories(
     params: Option<Query<PageParams>>,
     State(ctx): State<Arc<Ctx>>,
 ) -> Result<impl IntoResponse> {
-    tracing::info!("GET /stories");
-
     let q = params.unwrap_or_default();
     let page_id = PageToken::decode_or(&q.page_token, i32::MAX)?;
-
-    let (next_page, stories) = ctx.stories.list(page_id, q.page_size()).await?;
+    let stories = ctx.list_stories(page_id, q.page_size()).await?;
+    let next_page = stories.last().map(|s| s.id - 1).unwrap_or_default();
     let page = Page::new(PageToken::encode(next_page), stories);
-
     Ok(Json(page))
 }
 
@@ -50,8 +47,7 @@ async fn get_tasks(
     Path(story_id): Path<i32>,
     State(ctx): State<Arc<Ctx>>,
 ) -> Result<impl IntoResponse> {
-    tracing::info!("GET /stories/{}/tasks", story_id);
-    let tasks = ctx.tasks.list(story_id).await?;
+    let tasks = ctx.list_tasks(story_id).await?;
     Ok(Json(tasks))
 }
 
@@ -60,9 +56,8 @@ async fn create_story(
     State(ctx): State<Arc<Ctx>>,
     Json(body): Json<StoryBody>,
 ) -> Result<impl IntoResponse> {
-    tracing::info!("POST /stories");
     let name = body.validate()?;
-    let story = ctx.stories.create_story(name).await?;
+    let story = ctx.create_story(name).await?;
     Ok((StatusCode::CREATED, Json(story)))
 }
 
@@ -72,16 +67,17 @@ async fn update_story(
     State(ctx): State<Arc<Ctx>>,
     Json(body): Json<StoryBody>,
 ) -> Result<impl IntoResponse> {
-    tracing::info!("PATCH /stories/{}", id);
     let name = body.validate()?;
-    let story = ctx.stories.update(id, name).await?;
+    let story = ctx
+        .fetch_story(id)
+        .and_then(|_| ctx.update_story(id, name))
+        .await;
     Ok(Json(story))
 }
 
 /// Delete a story by id
 async fn delete_story(Path(id): Path<i32>, State(ctx): State<Arc<Ctx>>) -> StatusCode {
-    tracing::info!("DELETE /stories/{}", id);
-    if let Err(err) = ctx.stories.delete(id).await {
+    if let Err(err) = ctx.fetch_story(id).and_then(|_| ctx.delete_story(id)).await {
         return StatusCode::from(err);
     }
     StatusCode::NO_CONTENT

@@ -11,11 +11,12 @@ const MAX_NAME_LEN: usize = 100;
 pub struct CreateTaskBody {
     pub name: String,
     pub story_id: i32,
+    pub status: Option<String>,
 }
 
 impl CreateTaskBody {
     /// Validate a task create request.
-    pub fn validate(&self) -> Result<(i32, String)> {
+    pub fn validate(&self) -> Result<(i32, String, Status)> {
         // Collects error messages
         let mut messages = Vec::new();
 
@@ -28,13 +29,20 @@ impl CreateTaskBody {
         if name.is_empty() || name.len() > MAX_NAME_LEN {
             messages.push("name: invalid length".into());
         }
+        let mut status: Option<Status> = None;
+        if let Some(s) = &self.status {
+            match Status::from_str(s) {
+                Ok(parsed) => status = Some(parsed),
+                Err(err) => messages.push(format!("status: {}", err)),
+            }
+        }
 
         // Check for validation failures and return an error if found
         if !messages.is_empty() {
             return Err(Error::InvalidArgs { messages });
         }
 
-        Ok((story_id, name))
+        Ok((story_id, name, status.unwrap_or_default()))
     }
 }
 
