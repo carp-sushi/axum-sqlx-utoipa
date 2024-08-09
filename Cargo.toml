@@ -36,8 +36,8 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 
 [dev-dependencies]
-testcontainers = "0.20"
-testcontainers-modules = { version = "0.8", features = ["postgres"] }
+testcontainers = "0.21"
+testcontainers-modules = { version = "0.9", features = ["postgres"] }
 
 [profile.release]
 codegen-units = 1

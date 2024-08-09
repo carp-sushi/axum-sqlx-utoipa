@@ -56,7 +56,6 @@ mod tests {
             .await
             .unwrap();
 
-        tracing::debug!("Running migrations on test container");
         let m = Migrator::new(Path::new("./migrations")).await.unwrap();
         m.run(&pool).await.unwrap();
 
