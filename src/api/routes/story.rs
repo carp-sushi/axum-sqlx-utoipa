@@ -1,6 +1,8 @@
 use crate::{
-    api::dto::story::StoryBody,
-    api::page::{Page, PageParams, PageToken},
+    api::dto::{
+        page::{Page, PageParams, PageToken},
+        story::StoryBody,
+    },
     api::Ctx,
     Result,
 };
@@ -35,9 +37,9 @@ async fn get_stories(
     State(ctx): State<Arc<Ctx>>,
 ) -> Result<impl IntoResponse> {
     let q = params.unwrap_or_default();
-    let page_id = PageToken::decode_or(&q.page_token, i32::MAX)?;
+    let page_id = PageToken::decode_or(&q.page_token, 1)?;
     let stories = ctx.list_stories(page_id, q.page_size()).await?;
-    let next_page = stories.last().map(|s| s.id - 1).unwrap_or_default();
+    let next_page = stories.last().map(|s| s.id + 1).unwrap_or_default();
     let page = Page::new(PageToken::encode(next_page), stories);
     Ok(Json(page))
 }

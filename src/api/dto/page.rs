@@ -31,13 +31,13 @@ impl PageParams {
 pub(crate) struct Page<T: Serialize> {
     #[serde(skip_serializing_if = "Option::is_none")]
     next_page: Option<String>,
-    list: Vec<T>,
+    items: Vec<T>,
 }
 
 impl<T: Serialize> Page<T> {
     // Create a new page of domain objects
-    pub fn new(next_page: Option<String>, list: Vec<T>) -> Self {
-        Self { next_page, list }
+    pub fn new(next_page: Option<String>, items: Vec<T>) -> Self {
+        Self { next_page, items }
     }
 }
 

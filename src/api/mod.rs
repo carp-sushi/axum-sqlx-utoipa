@@ -3,7 +3,6 @@ use std::sync::Arc;
 
 mod ctx;
 mod dto;
-mod page;
 mod routes;
 mod tracer;
 

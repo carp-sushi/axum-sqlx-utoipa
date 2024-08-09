@@ -11,9 +11,7 @@ pub struct Ctx {
 impl Ctx {
     /// Create a new api context.
     pub fn new(db: Arc<PgPool>) -> Self {
-        // Repo
         let repo = Arc::new(Repo::new(db.clone()));
-        // Ctx
         Self { repo }
     }
 }

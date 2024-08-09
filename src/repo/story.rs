@@ -114,7 +114,7 @@ mod tests {
         assert_eq!(name, story.name);
 
         // Query stories page
-        let stories = repo.list_stories(i32::MAX, 10).await.unwrap();
+        let stories = repo.list_stories(1, 10).await.unwrap();
         assert_eq!(stories.len(), 1);
 
         // Update the name
