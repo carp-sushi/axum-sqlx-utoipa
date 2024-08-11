@@ -1,6 +1,7 @@
-use axum::{routing::get, Json, Router};
+use axum::Router;
 use std::sync::Arc;
 use utoipa::{openapi::OpenApi as OpenApiResp, OpenApi};
+use utoipa_swagger_ui::SwaggerUi;
 
 mod ctx;
 mod dto;
@@ -26,7 +27,7 @@ impl Api {
     pub fn routes(self) -> Router {
         tracer::wrap(
             Router::new()
-                .route("/openapi.json", get(openapi))
+                .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", api_docs()))
                 .merge(status::routes())
                 .merge(story::routes())
                 .merge(task::routes()),
@@ -36,8 +37,8 @@ impl Api {
 }
 
 /// Combine and serve openapi docs for internal routes.
-async fn openapi() -> Json<OpenApiResp> {
+fn api_docs() -> OpenApiResp {
     let mut api = story::ApiDoc::openapi();
     api.merge(task::ApiDoc::openapi());
-    Json(api)
+    api
 }

@@ -28,7 +28,8 @@ use uuid::Uuid;
         update_story,
         delete_story,
     ),
-    components(schemas(Story, Stories, Task, Status, ErrorDto))
+    components(schemas(StoryBody, Story, Stories, Task, Status, ErrorDto)),
+    tags((name = "Story"))
 )]
 pub struct ApiDoc;
 
@@ -44,6 +45,7 @@ pub fn routes() -> Router<Arc<Ctx>> {
 /// Get a story
 #[utoipa::path(
     get,
+    tag = "Story",
     path = "/stories/{id}",
     params(
         ("id" = Uuid, Path, description = "Story id")
@@ -51,7 +53,7 @@ pub fn routes() -> Router<Arc<Ctx>> {
     responses(
         (status = 200, description = "Get a story by id", body = Story),
         (status = 404, description = "Story not found", body = ErrorDto)
-    )
+    ),
 )]
 async fn get_story(Path(id): Path<Uuid>, State(ctx): State<Arc<Ctx>>) -> Result<impl IntoResponse> {
     let story = ctx.fetch_story(id).await?;
@@ -61,6 +63,7 @@ async fn get_story(Path(id): Path<Uuid>, State(ctx): State<Arc<Ctx>>) -> Result<
 /// Get a page of stories
 #[utoipa::path(
     get,
+    tag = "Story",
     path = "/stories",
     params(PageParams),
     responses(
@@ -82,6 +85,7 @@ async fn get_stories(
 /// Get all tasks for a story
 #[utoipa::path(
     get,
+    tag = "Story",
     path = "/stories/{id}/tasks",
     params(
         ("id" = Uuid, Path, description = "Story id")
@@ -101,6 +105,7 @@ async fn get_tasks(
 /// Create a new story
 #[utoipa::path(
     post,
+    tag = "Story",
     path = "/stories",
     request_body = StoryBody,
     responses(
@@ -120,6 +125,7 @@ async fn create_story(
 /// Update a story
 #[utoipa::path(
     patch,
+    tag = "Story",
     path = "/stories/{id}",
     request_body = StoryBody,
     responses(
@@ -144,13 +150,14 @@ async fn update_story(
 /// Delete a story
 #[utoipa::path(
     delete,
+    tag = "Story",
     path = "/stories/{id}",
     params(
         ("id" = Uuid, Path, description = "Story id")
     ),
     responses(
         (status = 204, description = "Story deleted"),
-        (status = 404, description = "Story not found", body = ErrorDto)
+        (status = 404, description = "Story not found")
     )
 )]
 async fn delete_story(Path(id): Path<Uuid>, State(ctx): State<Arc<Ctx>>) -> StatusCode {

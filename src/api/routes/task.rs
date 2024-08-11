@@ -20,7 +20,8 @@ use uuid::Uuid;
 #[derive(utoipa::OpenApi)]
 #[openapi(
     paths(get_task, create_task, update_task, delete_task),
-    components(schemas(Task, Status, ErrorDto))
+    components(schemas(Task, Status, CreateTaskBody, PatchTaskBody, ErrorDto)),
+    tags((name = "Task"))
 )]
 pub struct ApiDoc;
 
@@ -35,6 +36,7 @@ pub fn routes() -> Router<Arc<Ctx>> {
 /// Get a task
 #[utoipa::path(
     get,
+    tag = "Task",
     path = "/tasks/{id}",
     params(
         ("id" = Uuid, Path, description = "Task id")
@@ -52,6 +54,7 @@ async fn get_task(Path(id): Path<Uuid>, State(ctx): State<Arc<Ctx>>) -> Result<J
 /// Create a task
 #[utoipa::path(
     post,
+    tag = "Task",
     path = "/tasks",
     request_body = CreateTaskBody,
     responses(
@@ -74,6 +77,7 @@ async fn create_task(
 /// Update a task
 #[utoipa::path(
     patch,
+    tag = "Task",
     path = "/tasks/{id}",
     request_body = PatchTaskBody,
     responses(
@@ -102,13 +106,14 @@ async fn update_task(
 /// Delete a task
 #[utoipa::path(
     delete,
+    tag = "Task",
     path = "/tasks/{id}",
     params(
         ("id" = Uuid, Path, description = "The task id")
     ),
     responses(
         (status = 204, description = "Task deleted"),
-        (status = 404, description = "Task not found", body = ErrorDto)
+        (status = 404, description = "Task not found")
     )
 )]
 async fn delete_task(Path(id): Path<Uuid>, State(ctx): State<Arc<Ctx>>) -> StatusCode {

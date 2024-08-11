@@ -12,7 +12,7 @@
     "/stories": {
       "get": {
         "tags": [
-          "crate"
+          "Story"
         ],
         "summary": "Get a page of stories",
         "operationId": "get_stories",
@@ -52,7 +52,7 @@
       },
       "post": {
         "tags": [
-          "crate"
+          "Story"
         ],
         "summary": "Create a new story",
         "operationId": "create_story",
@@ -93,7 +93,7 @@
     "/stories/{id}": {
       "get": {
         "tags": [
-          "crate"
+          "Story"
         ],
         "summary": "Get a story",
         "operationId": "get_story",
@@ -134,7 +134,7 @@
       },
       "delete": {
         "tags": [
-          "crate"
+          "Story"
         ],
         "summary": "Delete a story",
         "operationId": "delete_story",
@@ -155,20 +155,13 @@
             "description": "Story deleted"
           },
           "404": {
-            "description": "Story not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorDto"
-                }
-              }
-            }
+            "description": "Story not found"
           }
         }
       },
       "patch": {
         "tags": [
-          "crate"
+          "Story"
         ],
         "summary": "Update a story",
         "operationId": "update_story",
@@ -230,7 +223,7 @@
     "/stories/{id}/tasks": {
       "get": {
         "tags": [
-          "crate"
+          "Story"
         ],
         "summary": "Get all tasks for a story",
         "operationId": "get_tasks",
@@ -266,7 +259,7 @@
     "/tasks": {
       "post": {
         "tags": [
-          "crate"
+          "Task"
         ],
         "summary": "Create a task",
         "operationId": "create_task",
@@ -307,7 +300,7 @@
     "/tasks/{id}": {
       "get": {
         "tags": [
-          "crate"
+          "Task"
         ],
         "summary": "Get a task",
         "operationId": "get_task",
@@ -348,7 +341,7 @@
       },
       "delete": {
         "tags": [
-          "crate"
+          "Task"
         ],
         "summary": "Delete a task",
         "operationId": "delete_task",
@@ -369,20 +362,13 @@
             "description": "Task deleted"
           },
           "404": {
-            "description": "Task not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorDto"
-                }
-              }
-            }
+            "description": "Task not found"
           }
         }
       },
       "patch": {
         "tags": [
-          "crate"
+          "Task"
         ],
         "summary": "Update a task",
         "operationId": "update_task",
@@ -444,6 +430,27 @@
   },
   "components": {
     "schemas": {
+      "CreateTaskBody": {
+        "type": "object",
+        "description": "The POST body for creating tasks",
+        "required": [
+          "name",
+          "story_id"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "nullable": true
+          },
+          "story_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
       "ErrorDto": {
         "type": "object",
         "description": "The type sent as an error response to the client.",
@@ -456,6 +463,20 @@
             "items": {
               "type": "string"
             }
+          }
+        }
+      },
+      "PatchTaskBody": {
+        "type": "object",
+        "description": "The PATCH body for updating tasks",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "nullable": true
           }
         }
       },
@@ -511,6 +532,18 @@
           }
         }
       },
+      "StoryBody": {
+        "type": "object",
+        "description": "The request body for creating or updating stories",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        }
+      },
       "Task": {
         "type": "object",
         "required": [
@@ -547,5 +580,13 @@
         }
       }
     }
-  }
+  },
+  "tags": [
+    {
+      "name": "Story"
+    },
+    {
+      "name": "Task"
+    }
+  ]
 }
