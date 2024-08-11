@@ -1,8 +1,9 @@
 use crate::{Error, Result};
 use base64::{engine::general_purpose::URL_SAFE, Engine as _};
 use borsh::{BorshDeserialize, BorshSerialize};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use utoipa::IntoParams;
 
 // Define a reasonable default page size.
 const DEFAULT_PAGE_SIZE: i32 = 100;
@@ -12,7 +13,7 @@ const MIN_PAGE_SIZE: i32 = 10;
 const MAX_PAGE_SIZE: i32 = 1000;
 
 /// The query parameters for getting a page of domain objects from a list endpoint.
-#[derive(Debug, Deserialize, Default)]
+#[derive(Debug, Deserialize, Default, IntoParams)]
 pub(crate) struct PageParams {
     pub page_size: Option<i32>,
     pub page_token: Option<String>,
@@ -23,21 +24,6 @@ impl PageParams {
         self.page_size
             .unwrap_or(DEFAULT_PAGE_SIZE)
             .clamp(MIN_PAGE_SIZE, MAX_PAGE_SIZE)
-    }
-}
-
-/// A page of domain objects
-#[derive(Debug, Serialize)]
-pub(crate) struct Page<T: Serialize> {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    next_page: Option<String>,
-    items: Vec<T>,
-}
-
-impl<T: Serialize> Page<T> {
-    // Create a new page of domain objects
-    pub fn new(next_page: Option<String>, items: Vec<T>) -> Self {
-        Self { next_page, items }
     }
 }
 

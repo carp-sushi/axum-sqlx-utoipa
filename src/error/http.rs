@@ -5,10 +5,11 @@ use axum::{
     Json,
 };
 use serde::Serialize;
+use utoipa::ToSchema;
 
 /// The type sent as an error response to the client.
-#[derive(Debug, Serialize)]
-struct ErrorDto {
+#[derive(Debug, Serialize, ToSchema)]
+pub struct ErrorDto {
     errors: Vec<String>,
 }
 

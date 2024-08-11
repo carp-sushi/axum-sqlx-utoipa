@@ -1,11 +1,9 @@
 use crate::{
-    api::{
-        dto::{
-            page::{Page, PageParams, PageToken},
-            story::StoryBody,
-        },
-        Ctx,
-    },
+    api::dto::page::{PageParams, PageToken},
+    api::dto::story::{Stories, StoryBody},
+    api::Ctx,
+    domain::{Status, Story, Task},
+    error::ErrorDto,
     Result,
 };
 use axum::{
@@ -19,6 +17,21 @@ use futures_util::TryFutureExt;
 use std::sync::Arc;
 use uuid::Uuid;
 
+/// OpenApi docs for story routes
+#[derive(utoipa::OpenApi)]
+#[openapi(
+    paths(
+        get_story,
+        get_stories,
+        get_tasks,
+        create_story,
+        update_story,
+        delete_story,
+    ),
+    components(schemas(Story, Stories, Task, Status, ErrorDto))
+)]
+pub struct ApiDoc;
+
 /// API routes for stories
 #[rustfmt::skip]
 pub fn routes() -> Router<Arc<Ctx>> {
@@ -28,13 +41,32 @@ pub fn routes() -> Router<Arc<Ctx>> {
         .route("/stories/:id/tasks", get(get_tasks))
 }
 
-/// Get story by id
+/// Get a story
+#[utoipa::path(
+    get,
+    path = "/stories/{id}",
+    params(
+        ("id" = Uuid, Path, description = "Story id")
+    ),
+    responses(
+        (status = 200, description = "Get a story by id", body = Story),
+        (status = 404, description = "Story not found", body = ErrorDto)
+    )
+)]
 async fn get_story(Path(id): Path<Uuid>, State(ctx): State<Arc<Ctx>>) -> Result<impl IntoResponse> {
     let story = ctx.fetch_story(id).await?;
     Ok(Json(story))
 }
 
 /// Get a page of stories
+#[utoipa::path(
+    get,
+    path = "/stories",
+    params(PageParams),
+    responses(
+        (status = 200, description = "Get a page of stories", body = Stories)
+    )
+)]
 async fn get_stories(
     params: Option<Query<PageParams>>,
     State(ctx): State<Arc<Ctx>>,
@@ -43,11 +75,21 @@ async fn get_stories(
     let q = params.unwrap_or_default();
     let cursor = PageToken::decode_or(&q.page_token, 1)?;
     let (next_cursor, stories) = ctx.list_stories(cursor, q.page_size()).await?;
-    let page = Page::new(PageToken::encode(next_cursor), stories);
-    Ok(Json(page))
+    let resp = Stories::new(PageToken::encode(next_cursor), stories);
+    Ok(Json(resp))
 }
 
 /// Get all tasks for a story
+#[utoipa::path(
+    get,
+    path = "/stories/{id}/tasks",
+    params(
+        ("id" = Uuid, Path, description = "Story id")
+    ),
+    responses(
+        (status = 200, description = "Get tasks for a story", body = [Task])
+    )
+)]
 async fn get_tasks(
     Path(story_id): Path<Uuid>,
     State(ctx): State<Arc<Ctx>>,
@@ -56,7 +98,16 @@ async fn get_tasks(
     Ok(Json(tasks))
 }
 
-/// Create a new story for an owner
+/// Create a new story
+#[utoipa::path(
+    post,
+    path = "/stories",
+    request_body = StoryBody,
+    responses(
+        (status = 201, description = "Story created", body = Story),
+        (status = 400, description = "Invalid request body", body = ErrorDto)
+    )
+)]
 async fn create_story(
     State(ctx): State<Arc<Ctx>>,
     Json(body): Json<StoryBody>,
@@ -66,7 +117,17 @@ async fn create_story(
     Ok((StatusCode::CREATED, Json(story)))
 }
 
-/// Update a story name.
+/// Update a story
+#[utoipa::path(
+    patch,
+    path = "/stories/{id}",
+    request_body = StoryBody,
+    responses(
+        (status = 200, description = "Story updated", body = Story),
+        (status = 400, description = "Invalid request body", body = ErrorDto),
+        (status = 404, description = "Story not found", body = ErrorDto)
+    )
+)]
 async fn update_story(
     Path(id): Path<Uuid>,
     State(ctx): State<Arc<Ctx>>,
@@ -80,7 +141,18 @@ async fn update_story(
     Ok(Json(story))
 }
 
-/// Delete a story by id
+/// Delete a story
+#[utoipa::path(
+    delete,
+    path = "/stories/{id}",
+    params(
+        ("id" = Uuid, Path, description = "Story id")
+    ),
+    responses(
+        (status = 204, description = "Story deleted"),
+        (status = 404, description = "Story not found", body = ErrorDto)
+    )
+)]
 async fn delete_story(Path(id): Path<Uuid>, State(ctx): State<Arc<Ctx>>) -> StatusCode {
     if let Err(err) = ctx.fetch_story(id).and_then(|_| ctx.delete_story(id)).await {
         return StatusCode::from(err);

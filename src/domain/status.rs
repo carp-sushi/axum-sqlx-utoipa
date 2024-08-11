@@ -1,7 +1,10 @@
 use serde::Serialize;
 use strum_macros::{Display, EnumString};
+use utoipa::ToSchema;
 
-#[derive(Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash, EnumString, Display, Serialize)]
+#[derive(
+    Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash, EnumString, Display, Serialize, ToSchema,
+)]
 #[strum(serialize_all = "snake_case")]
 #[serde(rename_all = "snake_case")]
 pub enum Status {

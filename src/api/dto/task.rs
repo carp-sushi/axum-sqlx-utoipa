@@ -2,13 +2,14 @@ use crate::{domain::Status, Error, Result};
 use serde::Deserialize;
 use std::fmt::Debug;
 use std::str::FromStr;
+use utoipa::ToSchema;
 use uuid::Uuid;
 
 /// Limit name size in http request body.
 const MAX_NAME_LEN: usize = 100;
 
 /// The POST body for creating tasks
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct CreateTaskBody {
     pub name: String,
     pub story_id: Uuid,
@@ -44,7 +45,7 @@ impl CreateTaskBody {
 }
 
 /// The PATCH body for updating tasks
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct PatchTaskBody {
     pub name: Option<String>,
     pub status: Option<String>,

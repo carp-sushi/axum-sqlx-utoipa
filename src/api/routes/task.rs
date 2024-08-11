@@ -1,7 +1,8 @@
 use crate::{
     api::dto::task::{CreateTaskBody, PatchTaskBody},
     api::Ctx,
-    domain::Task,
+    domain::{Status, Task},
+    error::ErrorDto,
     Result,
 };
 use axum::{
@@ -15,6 +16,14 @@ use futures_util::TryFutureExt;
 use std::sync::Arc;
 use uuid::Uuid;
 
+/// OpenApi docs for story routes
+#[derive(utoipa::OpenApi)]
+#[openapi(
+    paths(get_task, create_task, update_task, delete_task),
+    components(schemas(Task, Status, ErrorDto))
+)]
+pub struct ApiDoc;
+
 /// API routes for tasks
 #[rustfmt::skip]
 pub fn routes() -> Router<Arc<Ctx>> {
@@ -23,13 +32,33 @@ pub fn routes() -> Router<Arc<Ctx>> {
         .route("/tasks/:id", get(get_task).delete(delete_task).patch(update_task))
 }
 
-/// Get task by id
+/// Get a task
+#[utoipa::path(
+    get,
+    path = "/tasks/{id}",
+    params(
+        ("id" = Uuid, Path, description = "Task id")
+    ),
+    responses(
+        (status = 200, description = "Get a task by id", body = Task),
+        (status = 404, description = "Task not found", body = ErrorDto)
+    )
+)]
 async fn get_task(Path(id): Path<Uuid>, State(ctx): State<Arc<Ctx>>) -> Result<Json<Task>> {
     let task = ctx.fetch_task(id).await?;
     Ok(Json(task))
 }
 
-/// Create a task new task
+/// Create a task
+#[utoipa::path(
+    post,
+    path = "/tasks",
+    request_body = CreateTaskBody,
+    responses(
+        (status = 201, description = "Task created", body = Task),
+        (status = 400, description = "Invalid requesst body", body = ErrorDto)
+    )
+)]
 async fn create_task(
     State(ctx): State<Arc<Ctx>>,
     Json(body): Json<CreateTaskBody>,
@@ -42,7 +71,17 @@ async fn create_task(
     Ok((StatusCode::CREATED, Json(task)))
 }
 
-/// Update a task name and/or status.
+/// Update a task
+#[utoipa::path(
+    patch,
+    path = "/tasks/{id}",
+    request_body = PatchTaskBody,
+    responses(
+        (status = 200, description = "Task updated", body = Task),
+        (status = 400, description = "Invalid request body", body = ErrorDto),
+        (status = 404, description = "Task not found", body = ErrorDto)
+    )
+)]
 async fn update_task(
     Path(id): Path<Uuid>,
     State(ctx): State<Arc<Ctx>>,
@@ -60,7 +99,18 @@ async fn update_task(
     Ok(Json(task))
 }
 
-/// Delete a task by id
+/// Delete a task
+#[utoipa::path(
+    delete,
+    path = "/tasks/{id}",
+    params(
+        ("id" = Uuid, Path, description = "The task id")
+    ),
+    responses(
+        (status = 204, description = "Task deleted"),
+        (status = 404, description = "Task not found", body = ErrorDto)
+    )
+)]
 async fn delete_task(Path(id): Path<Uuid>, State(ctx): State<Arc<Ctx>>) -> StatusCode {
     if let Err(err) = ctx.fetch_task(id).and_then(|_| ctx.delete_task(id)).await {
         return StatusCode::from(err);

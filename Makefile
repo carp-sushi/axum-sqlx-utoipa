@@ -1,5 +1,5 @@
 .PHONY: all
-all: fmt build test lint
+all: fmt build test lint openapi
 
 .PHONY: fmt
 fmt:
@@ -31,8 +31,12 @@ clean:
 
 .PHONY: run
 run:
-	@cargo run
+	@cargo run --bin sqlx-todos
 
 .PHONY: release
 release:
 	@cargo build --release
+
+.PHONY: openapi
+openapi:
+	@cargo run --bin openapi > docs/openapi.json
