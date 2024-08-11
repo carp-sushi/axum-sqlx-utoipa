@@ -7,17 +7,17 @@ use tower_http::trace::TraceLayer;
 pub(crate) fn wrap(routes: Router<Arc<Ctx>>) -> Router<Arc<Ctx>> {
     routes.layer(
         TraceLayer::new_for_http().make_span_with(|req: &Request<_>| {
-            let matched_path = req
+            let path = req
                 .extensions()
                 .get::<MatchedPath>()
                 .map(MatchedPath::as_str);
 
-            tracing::info!("{} {:?}", req.method(), matched_path.unwrap_or_default());
+            tracing::info!("{} {:?}", req.method(), path.unwrap_or_default());
 
             tracing::info_span!(
-                "http_request",
+                "request",
                 method = ?req.method(),
-                matched_path,
+                path,
                 some_other_field = tracing::field::Empty,
             )
         }),

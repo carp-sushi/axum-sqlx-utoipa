@@ -1,9 +1,11 @@
 use crate::{
-    api::dto::{
-        page::{Page, PageParams, PageToken},
-        story::StoryBody,
+    api::{
+        dto::{
+            page::{Page, PageParams, PageToken},
+            story::StoryBody,
+        },
+        Ctx,
     },
-    api::Ctx,
     Result,
 };
 use axum::{
@@ -15,6 +17,7 @@ use axum::{
 };
 use futures_util::TryFutureExt;
 use std::sync::Arc;
+use uuid::Uuid;
 
 /// API routes for stories
 #[rustfmt::skip]
@@ -26,7 +29,7 @@ pub fn routes() -> Router<Arc<Ctx>> {
 }
 
 /// Get story by id
-async fn get_story(Path(id): Path<i32>, State(ctx): State<Arc<Ctx>>) -> Result<impl IntoResponse> {
+async fn get_story(Path(id): Path<Uuid>, State(ctx): State<Arc<Ctx>>) -> Result<impl IntoResponse> {
     let story = ctx.fetch_story(id).await?;
     Ok(Json(story))
 }
@@ -36,17 +39,17 @@ async fn get_stories(
     params: Option<Query<PageParams>>,
     State(ctx): State<Arc<Ctx>>,
 ) -> Result<impl IntoResponse> {
+    tracing::debug!("params: {:?}", params);
     let q = params.unwrap_or_default();
-    let page_id = PageToken::decode_or(&q.page_token, 1)?;
-    let stories = ctx.list_stories(page_id, q.page_size()).await?;
-    let next_page = stories.last().map(|s| s.id + 1).unwrap_or_default();
-    let page = Page::new(PageToken::encode(next_page), stories);
+    let cursor = PageToken::decode_or(&q.page_token, 1)?;
+    let (next_cursor, stories) = ctx.list_stories(cursor, q.page_size()).await?;
+    let page = Page::new(PageToken::encode(next_cursor), stories);
     Ok(Json(page))
 }
 
 /// Get all tasks for a story
 async fn get_tasks(
-    Path(story_id): Path<i32>,
+    Path(story_id): Path<Uuid>,
     State(ctx): State<Arc<Ctx>>,
 ) -> Result<impl IntoResponse> {
     let tasks = ctx.list_tasks(story_id).await?;
@@ -65,7 +68,7 @@ async fn create_story(
 
 /// Update a story name.
 async fn update_story(
-    Path(id): Path<i32>,
+    Path(id): Path<Uuid>,
     State(ctx): State<Arc<Ctx>>,
     Json(body): Json<StoryBody>,
 ) -> Result<impl IntoResponse> {
@@ -78,7 +81,7 @@ async fn update_story(
 }
 
 /// Delete a story by id
-async fn delete_story(Path(id): Path<i32>, State(ctx): State<Arc<Ctx>>) -> StatusCode {
+async fn delete_story(Path(id): Path<Uuid>, State(ctx): State<Arc<Ctx>>) -> StatusCode {
     if let Err(err) = ctx.fetch_story(id).and_then(|_| ctx.delete_story(id)).await {
         return StatusCode::from(err);
     }

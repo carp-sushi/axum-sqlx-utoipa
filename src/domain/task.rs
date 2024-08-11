@@ -1,10 +1,14 @@
 use crate::domain::Status;
+use chrono::{DateTime, Utc};
 use serde::Serialize;
+use uuid::Uuid;
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
 pub struct Task {
-    pub id: i32,
-    pub story_id: i32,
+    pub id: Uuid,
+    pub story_id: Uuid,
     pub name: String,
     pub status: Status,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }

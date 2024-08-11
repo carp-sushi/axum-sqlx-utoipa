@@ -1,3 +1,10 @@
+#![deny(
+    clippy::exit,
+    clippy::print_stderr,
+    clippy::print_stdout,
+    clippy::unwrap_used,
+    clippy::wildcard_imports
+)]
 pub mod api;
 pub mod config;
 pub mod domain;

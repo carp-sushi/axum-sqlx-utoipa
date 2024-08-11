@@ -46,7 +46,7 @@ impl Config {
         let db_user = env::var("DB_USER").expect("DB_USER not set");
         let db_password = env::var("DB_PASS").expect("DB_PASS not set");
         let db_database = env::var("DB_NAME").expect("DB_NAME not set");
-        let db_schema = env::var("DB_SCHEMA").expect("DB_SCHEMA not set");
+        let db_schema = env::var("DB_SCHEMA").unwrap_or("public".to_owned());
 
         // Create config
         Self {

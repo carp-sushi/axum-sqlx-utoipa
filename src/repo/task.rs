@@ -7,6 +7,7 @@ use futures_util::TryStreamExt;
 use sqlx::{postgres::PgRow, FromRow, Row};
 use std::str::FromStr;
 use stripmargin::StripMargin;
+use uuid::Uuid;
 
 // Put some reasonable upper limit when querying tasks for a story.
 const MAX_TASKS: i16 = 500;
@@ -20,12 +21,16 @@ impl FromRow<'_, PgRow> for Task {
         let status: String = row.try_get("status")?;
         // Manually convert to enum type
         let status = Status::from_str(&status).map_err(|err| sqlx::Error::Decode(Box::new(err)))?;
+        let created_at = row.try_get("created_at")?;
+        let updated_at = row.try_get("updated_at")?;
 
         Ok(Self {
             id,
             story_id,
             name,
             status,
+            created_at,
+            updated_at,
         })
     }
 }
@@ -33,7 +38,7 @@ impl FromRow<'_, PgRow> for Task {
 // Extend repo with queries related to tasks.
 impl Repo {
     /// Get a task by id
-    pub async fn fetch_task(&self, id: i32) -> Result<Task> {
+    pub async fn fetch_task(&self, id: Uuid) -> Result<Task> {
         let query = sql::task::FETCH.strip_margin();
 
         let task_opt = sqlx::query_as(&query)
@@ -43,12 +48,12 @@ impl Repo {
 
         match task_opt {
             Some(task) => Ok(task),
-            None => Err(Error::not_found(format!("task not found: {}", id))),
+            None => Err(Error::not_found(format!("task not found: {id}"))),
         }
     }
 
     /// Select tasks for a story
-    pub async fn list_tasks(&self, story_id: i32) -> Result<Vec<Task>> {
+    pub async fn list_tasks(&self, story_id: Uuid) -> Result<Vec<Task>> {
         let query = sql::task::LIST.strip_margin();
 
         let mut result_set = sqlx::query(&query)
@@ -67,7 +72,7 @@ impl Repo {
     }
 
     /// Insert a new task
-    pub async fn create_task(&self, story_id: i32, name: String, status: Status) -> Result<Task> {
+    pub async fn create_task(&self, story_id: Uuid, name: String, status: Status) -> Result<Task> {
         let query = sql::task::CREATE.strip_margin();
 
         let task = sqlx::query_as(&query)
@@ -81,7 +86,7 @@ impl Repo {
     }
 
     /// Update task name and status.
-    pub async fn update_task(&self, id: i32, name: String, status: Status) -> Result<Task> {
+    pub async fn update_task(&self, id: Uuid, name: String, status: Status) -> Result<Task> {
         let query = sql::task::UPDATE.strip_margin();
 
         let task = sqlx::query_as(&query)
@@ -95,7 +100,7 @@ impl Repo {
     }
 
     /// Delete a task.
-    pub async fn delete_task(&self, id: i32) -> Result<u64> {
+    pub async fn delete_task(&self, id: Uuid) -> Result<u64> {
         let query = sql::task::DELETE.strip_margin();
         let result = sqlx::query(&query).bind(id).execute(self.db_ref()).await?;
         Ok(result.rows_affected())

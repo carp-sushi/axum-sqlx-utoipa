@@ -56,6 +56,7 @@ mod tests {
             .await
             .unwrap();
 
+        println!("Running migrations on test container: {connection_string}");
         let m = Migrator::new(Path::new("./migrations")).await.unwrap();
         m.run(&pool).await.unwrap();
 

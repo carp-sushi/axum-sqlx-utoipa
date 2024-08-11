@@ -13,6 +13,7 @@ use axum::{
 };
 use futures_util::TryFutureExt;
 use std::sync::Arc;
+use uuid::Uuid;
 
 /// API routes for tasks
 #[rustfmt::skip]
@@ -23,7 +24,7 @@ pub fn routes() -> Router<Arc<Ctx>> {
 }
 
 /// Get task by id
-async fn get_task(Path(id): Path<i32>, State(ctx): State<Arc<Ctx>>) -> Result<Json<Task>> {
+async fn get_task(Path(id): Path<Uuid>, State(ctx): State<Arc<Ctx>>) -> Result<Json<Task>> {
     let task = ctx.fetch_task(id).await?;
     Ok(Json(task))
 }
@@ -43,7 +44,7 @@ async fn create_task(
 
 /// Update a task name and/or status.
 async fn update_task(
-    Path(id): Path<i32>,
+    Path(id): Path<Uuid>,
     State(ctx): State<Arc<Ctx>>,
     Json(body): Json<PatchTaskBody>,
 ) -> Result<Json<Task>> {
@@ -60,7 +61,7 @@ async fn update_task(
 }
 
 /// Delete a task by id
-async fn delete_task(Path(id): Path<i32>, State(ctx): State<Arc<Ctx>>) -> StatusCode {
+async fn delete_task(Path(id): Path<Uuid>, State(ctx): State<Arc<Ctx>>) -> StatusCode {
     if let Err(err) = ctx.fetch_task(id).and_then(|_| ctx.delete_task(id)).await {
         return StatusCode::from(err);
     }

@@ -2,6 +2,7 @@ use crate::{domain::Status, Error, Result};
 use serde::Deserialize;
 use std::fmt::Debug;
 use std::str::FromStr;
+use uuid::Uuid;
 
 /// Limit name size in http request body.
 const MAX_NAME_LEN: usize = 100;
@@ -10,21 +11,17 @@ const MAX_NAME_LEN: usize = 100;
 #[derive(Debug, Deserialize)]
 pub struct CreateTaskBody {
     pub name: String,
-    pub story_id: i32,
+    pub story_id: Uuid,
     pub status: Option<String>,
 }
 
 impl CreateTaskBody {
     /// Validate a task create request.
-    pub fn validate(&self) -> Result<(i32, String, Status)> {
+    pub fn validate(&self) -> Result<(Uuid, String, Status)> {
         // Collects error messages
         let mut messages = Vec::new();
 
         // Validate body params
-        let story_id = self.story_id;
-        if story_id <= 0 {
-            messages.push("story_id: must be > 0".into());
-        }
         let name = self.name.trim().to_string();
         if name.is_empty() || name.len() > MAX_NAME_LEN {
             messages.push("name: invalid length".into());
@@ -42,7 +39,7 @@ impl CreateTaskBody {
             return Err(Error::InvalidArgs { messages });
         }
 
-        Ok((story_id, name, status.unwrap_or_default()))
+        Ok((self.story_id, name, status.unwrap_or_default()))
     }
 }
 

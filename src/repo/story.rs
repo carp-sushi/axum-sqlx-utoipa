@@ -3,6 +3,7 @@ use crate::{domain::Story, Error, Result};
 use futures_util::TryStreamExt;
 use sqlx::{postgres::PgRow, FromRow, Row};
 use stripmargin::StripMargin;
+use uuid::Uuid;
 
 /// Map sqlx rows to story domain objects.
 impl FromRow<'_, PgRow> for Story {
@@ -10,6 +11,9 @@ impl FromRow<'_, PgRow> for Story {
         Ok(Self {
             id: row.try_get("id")?,
             name: row.try_get("name")?,
+            seqno: row.try_get("seqno")?,
+            created_at: row.try_get("created_at")?,
+            updated_at: row.try_get("updated_at")?,
         })
     }
 }
@@ -17,7 +21,7 @@ impl FromRow<'_, PgRow> for Story {
 // Extend repo with queries related to stories.
 impl Repo {
     /// Select a story by id
-    pub async fn fetch_story(&self, id: i32) -> Result<Story> {
+    pub async fn fetch_story(&self, id: Uuid) -> Result<Story> {
         let query = sql::story::FETCH.strip_margin();
 
         let story_opt = sqlx::query_as(&query)
@@ -27,27 +31,29 @@ impl Repo {
 
         match story_opt {
             Some(story) => Ok(story),
-            None => Err(Error::not_found(format!("story not found: {}", id))),
+            None => Err(Error::not_found(format!("story not found: {id}"))),
         }
     }
 
     /// Select a page of stories.
-    pub async fn list_stories(&self, page_id: i32, page_size: i32) -> Result<Vec<Story>> {
+    pub async fn list_stories(&self, cursor: i64, limit: i32) -> Result<(i64, Vec<Story>)> {
         let query = sql::story::LIST.strip_margin();
 
         let mut result_set = sqlx::query(&query)
-            .bind(page_id)
-            .bind(page_size)
+            .bind(cursor)
+            .bind(limit)
             .fetch(self.db_ref());
 
-        let mut stories = Vec::with_capacity(page_size as usize);
+        let mut stories = Vec::with_capacity(limit as usize);
 
         while let Some(row) = result_set.try_next().await? {
             let story = Story::from_row(&row)?;
             stories.push(story);
         }
 
-        Ok(stories)
+        let next_cursor = stories.last().map(|s| s.seqno + 1).unwrap_or_default();
+
+        Ok((next_cursor, stories))
     }
 
     /// Insert a new story
@@ -63,7 +69,7 @@ impl Repo {
     }
 
     /// Update story name
-    pub async fn update_story(&self, id: i32, name: String) -> Result<Story> {
+    pub async fn update_story(&self, id: Uuid, name: String) -> Result<Story> {
         let query = sql::story::UPDATE.strip_margin();
 
         let story = sqlx::query_as(&query)
@@ -76,7 +82,7 @@ impl Repo {
     }
 
     /// Delete a story and its tasks.
-    pub async fn delete_story(&self, id: i32) -> Result<u64> {
+    pub async fn delete_story(&self, id: Uuid) -> Result<u64> {
         let mut tx = self.db.begin().await?;
 
         let query = sql::task::DELETE_BY_STORY.strip_margin();
@@ -114,7 +120,7 @@ mod tests {
         assert_eq!(name, story.name);
 
         // Query stories page
-        let stories = repo.list_stories(1, 10).await.unwrap();
+        let (_, stories) = repo.list_stories(1, 10).await.unwrap();
         assert_eq!(stories.len(), 1);
 
         // Update the name

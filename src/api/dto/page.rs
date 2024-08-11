@@ -14,8 +14,8 @@ const MAX_PAGE_SIZE: i32 = 1000;
 /// The query parameters for getting a page of domain objects from a list endpoint.
 #[derive(Debug, Deserialize, Default)]
 pub(crate) struct PageParams {
-    pub page_token: Option<String>,
     pub page_size: Option<i32>,
+    pub page_token: Option<String>,
 }
 
 impl PageParams {
@@ -44,17 +44,17 @@ impl<T: Serialize> Page<T> {
 /// A paging token for accessing previous, next pages of domain objects in a list call.
 #[derive(BorshSerialize, BorshDeserialize)]
 pub(crate) struct PageToken {
-    id: i32,
+    cursor: i64,
     ts: u64,
 }
 
 impl PageToken {
-    /// Encode a cursor id as a page token.
-    pub fn encode(id: i32) -> Option<String> {
-        if id <= 0 {
+    /// Encode a cursor seqno as a page token.
+    pub fn encode(cursor: i64) -> Option<String> {
+        if cursor <= 0 {
             return None;
         }
-        match borsh::to_vec(&PageToken { id, ts: now() }) {
+        match borsh::to_vec(&PageToken { cursor, ts: now() }) {
             Ok(bytes) => Some(URL_SAFE.encode(bytes)),
             Err(err) => {
                 tracing::warn!("failed serializing page token: {}", err);
@@ -63,17 +63,17 @@ impl PageToken {
         }
     }
 
-    /// Extract page id from encoded token param, falling back to a default value.
-    pub fn decode_or(token_opt: &Option<String>, default: i32) -> Result<i32> {
+    /// Extract page cursor from encoded token param, falling back to a default value.
+    pub fn decode_or(token_opt: &Option<String>, default: i64) -> Result<i64> {
         if default <= 0 {
-            return Err(Error::invalid_args("default page id must be > 0"));
+            return Err(Error::invalid_args("default page cursor must be > 0"));
         }
         match token_opt {
             None => Ok(default),
             Some(token) => {
                 let bytes = URL_SAFE.decode(token)?;
                 let page_token: PageToken = borsh::from_slice(&bytes)?;
-                Ok(page_token.id)
+                Ok(page_token.cursor)
             }
         }
     }
@@ -101,14 +101,14 @@ mod tests {
     }
 
     #[test]
-    fn encode_invalid_page_id() {
+    fn encode_invalid_page_cursor() {
         assert!(PageToken::encode(0).is_none());
         assert!(PageToken::encode(-10).is_none());
     }
 
     #[test]
     fn decode_default() {
-        let fallback = i32::MAX;
+        let fallback = i64::MAX;
         let output = PageToken::decode_or(&None, fallback).unwrap();
         assert_eq!(fallback, output);
     }
