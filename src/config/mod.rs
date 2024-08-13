@@ -17,6 +17,7 @@ pub struct Config {
     pub db_password: String,
     pub db_database: String,
     pub db_schema: String,
+    pub messenger: String,
 }
 
 /// Default for config just calls basic constructor
@@ -47,6 +48,7 @@ impl Config {
         let db_password = env::var("DB_PASS").expect("DB_PASS not set");
         let db_database = env::var("DB_NAME").expect("DB_NAME not set");
         let db_schema = env::var("DB_SCHEMA").unwrap_or("public".to_owned());
+        let messenger = env::var("MESSENGER").unwrap_or("email".to_owned());
 
         // Create config
         Self {
@@ -58,6 +60,7 @@ impl Config {
             db_password,
             db_database,
             db_schema,
+            messenger,
         }
     }
 }

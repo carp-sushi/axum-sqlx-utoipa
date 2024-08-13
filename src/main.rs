@@ -6,7 +6,7 @@ use sqlx::migrate::Migrator;
 use sqlx_todos::{
     api::{Api, Ctx},
     config::Config,
-    driver::message::{email::EmailMessenger, Messenger},
+    driver::message::{email::EmailMessenger, sms::SmsMessenger, Messenger},
     repo::Repo,
 };
 use std::{error::Error, sync::Arc};
@@ -44,7 +44,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let repo = Arc::new(Repo::new(pool));
 
     // Set up message driver
-    let messenger = Arc::new(Box::new(EmailMessenger) as Box<dyn Messenger>);
+    tracing::debug!("Loading {} messenger", config.messenger);
+    let messenger = if config.messenger == "sms" {
+        Arc::new(Box::new(SmsMessenger) as Box<dyn Messenger>)
+    } else {
+        Arc::new(Box::new(EmailMessenger) as Box<dyn Messenger>)
+    };
 
     // Set up API
     let ctx = Ctx::new(repo, messenger);
