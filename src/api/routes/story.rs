@@ -45,15 +45,15 @@ pub fn routes() -> Router<Arc<Ctx>> {
 /// Get a story
 #[utoipa::path(
     get,
-    tag = "Story",
     path = "/stories/{id}",
+    tag = "Story",
     params(
         ("id" = Uuid, Path, description = "Story id")
     ),
     responses(
         (status = 200, description = "Get a story by id", body = Story),
         (status = 404, description = "Story not found", body = ErrorDto)
-    ),
+    )
 )]
 async fn get_story(Path(id): Path<Uuid>, State(ctx): State<Arc<Ctx>>) -> Result<impl IntoResponse> {
     let story = ctx.fetch_story(id).await?;
@@ -63,8 +63,8 @@ async fn get_story(Path(id): Path<Uuid>, State(ctx): State<Arc<Ctx>>) -> Result<
 /// Get a page of stories
 #[utoipa::path(
     get,
-    tag = "Story",
     path = "/stories",
+    tag = "Story",
     params(PageParams),
     responses(
         (status = 200, description = "Get a page of stories", body = Stories)
@@ -85,8 +85,8 @@ async fn get_stories(
 /// Get all tasks for a story
 #[utoipa::path(
     get,
-    tag = "Story",
     path = "/stories/{id}/tasks",
+    tag = "Story",
     params(
         ("id" = Uuid, Path, description = "Story id")
     ),
@@ -105,8 +105,8 @@ async fn get_tasks(
 /// Create a new story
 #[utoipa::path(
     post,
-    tag = "Story",
     path = "/stories",
+    tag = "Story",
     request_body = StoryBody,
     responses(
         (status = 201, description = "Story created", body = Story),
@@ -119,14 +119,17 @@ async fn create_story(
 ) -> Result<impl IntoResponse> {
     let name = body.validate()?;
     let story = ctx.create_story(name).await?;
+    ctx.messenger
+        .send("root@system", &format!("story {} created!", story.id))
+        .await?;
     Ok((StatusCode::CREATED, Json(story)))
 }
 
 /// Update a story
 #[utoipa::path(
     patch,
-    tag = "Story",
     path = "/stories/{id}",
+    tag = "Story",
     request_body = StoryBody,
     responses(
         (status = 200, description = "Story updated", body = Story),
@@ -143,15 +146,15 @@ async fn update_story(
     let story = ctx
         .fetch_story(id)
         .and_then(|_| ctx.update_story(id, name))
-        .await;
+        .await?;
     Ok(Json(story))
 }
 
 /// Delete a story
 #[utoipa::path(
     delete,
-    tag = "Story",
     path = "/stories/{id}",
+    tag = "Story",
     params(
         ("id" = Uuid, Path, description = "Story id")
     ),
@@ -161,7 +164,8 @@ async fn update_story(
     )
 )]
 async fn delete_story(Path(id): Path<Uuid>, State(ctx): State<Arc<Ctx>>) -> StatusCode {
-    if let Err(err) = ctx.fetch_story(id).and_then(|_| ctx.delete_story(id)).await {
+    let result = ctx.fetch_story(id).and_then(|_| ctx.delete_story(id)).await;
+    if let Err(err) = result {
         return StatusCode::from(err);
     }
     StatusCode::NO_CONTENT

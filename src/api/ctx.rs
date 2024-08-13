@@ -1,18 +1,17 @@
-use crate::repo::Repo;
-use sqlx::postgres::PgPool;
+use crate::{driver::message::Messenger, repo::Repo};
 use std::{ops::Deref, sync::Arc};
 
 /// API context
 #[derive(Clone)]
 pub struct Ctx {
     repo: Arc<Repo>,
+    pub messenger: Arc<Box<dyn Messenger>>,
 }
 
 impl Ctx {
     /// Create a new api context.
-    pub fn new(db: Arc<PgPool>) -> Self {
-        let repo = Arc::new(Repo::new(db.clone()));
-        Self { repo }
+    pub fn new(repo: Arc<Repo>, messenger: Arc<Box<dyn Messenger>>) -> Self {
+        Self { repo, messenger }
     }
 }
 

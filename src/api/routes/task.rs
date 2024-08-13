@@ -36,8 +36,8 @@ pub fn routes() -> Router<Arc<Ctx>> {
 /// Get a task
 #[utoipa::path(
     get,
-    tag = "Task",
     path = "/tasks/{id}",
+    tag = "Task",
     params(
         ("id" = Uuid, Path, description = "Task id")
     ),
@@ -54,8 +54,8 @@ async fn get_task(Path(id): Path<Uuid>, State(ctx): State<Arc<Ctx>>) -> Result<J
 /// Create a task
 #[utoipa::path(
     post,
-    tag = "Task",
     path = "/tasks",
+    tag = "Task",
     request_body = CreateTaskBody,
     responses(
         (status = 201, description = "Task created", body = Task),
@@ -71,14 +71,17 @@ async fn create_task(
         .fetch_story(story_id)
         .and_then(|_| ctx.create_task(story_id, name, status))
         .await?;
+    ctx.messenger
+        .send("root@system", &format!("task {} created!", task.id))
+        .await?;
     Ok((StatusCode::CREATED, Json(task)))
 }
 
 /// Update a task
 #[utoipa::path(
     patch,
-    tag = "Task",
     path = "/tasks/{id}",
+    tag = "Task",
     request_body = PatchTaskBody,
     responses(
         (status = 200, description = "Task updated", body = Task),
@@ -106,8 +109,8 @@ async fn update_task(
 /// Delete a task
 #[utoipa::path(
     delete,
-    tag = "Task",
     path = "/tasks/{id}",
+    tag = "Task",
     params(
         ("id" = Uuid, Path, description = "The task id")
     ),

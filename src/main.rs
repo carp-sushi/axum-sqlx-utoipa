@@ -6,6 +6,8 @@ use sqlx::migrate::Migrator;
 use sqlx_todos::{
     api::{Api, Ctx},
     config::Config,
+    driver::message::{email::EmailMessenger, Messenger},
+    repo::Repo,
 };
 use std::{error::Error, sync::Arc};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
@@ -37,8 +39,15 @@ async fn main() -> Result<(), Box<dyn Error>> {
     tracing::debug!("Running migrations");
     MIGRATOR.run(&pool).await?;
 
+    // Set up repo
+    let pool = Arc::new(pool);
+    let repo = Arc::new(Repo::new(pool));
+
+    // Set up message driver
+    let messenger = Arc::new(Box::new(EmailMessenger) as Box<dyn Messenger>);
+
     // Set up API
-    let ctx = Ctx::new(Arc::new(pool));
+    let ctx = Ctx::new(repo, messenger);
     let api = Api::new(Arc::new(ctx));
 
     // Start server
