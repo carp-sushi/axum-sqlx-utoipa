@@ -88,3 +88,20 @@ impl PatchTaskBody {
         Ok((name, status))
     }
 }
+
+#[derive(Debug, Deserialize, Default)]
+pub struct TaskParams {
+    pub status: Option<String>,
+}
+
+impl TaskParams {
+    /// Parse status enum from param string
+    pub fn status(&self) -> Option<Status> {
+        if let Some(s) = self.status.clone() {
+            if let Ok(status) = Status::from_str(&s) {
+                return Some(status);
+            }
+        }
+        None
+    }
+}

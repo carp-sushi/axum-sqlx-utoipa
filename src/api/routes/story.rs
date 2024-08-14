@@ -1,6 +1,7 @@
 use crate::{
     api::dto::page::{PageParams, PageToken},
     api::dto::story::{Stories, StoryBody},
+    api::dto::task::TaskParams,
     api::Ctx,
     domain::{Status, Story, Task},
     error::ErrorDto,
@@ -51,7 +52,7 @@ pub fn routes() -> Router<Arc<Ctx>> {
         ("id" = Uuid, Path, description = "Story id")
     ),
     responses(
-        (status = 200, description = "Get a story by id", body = Story),
+        (status = 200, description = "The story", body = Story),
         (status = 404, description = "Story not found", body = ErrorDto)
     )
 )]
@@ -65,9 +66,22 @@ async fn get_story(Path(id): Path<Uuid>, State(ctx): State<Arc<Ctx>>) -> Result<
     get,
     path = "/stories",
     tag = "Story",
-    params(PageParams),
+    params(
+        ("page_size" = Option<i32>,
+            Query,
+            minimum = 10,
+            maximum = 1000,
+            description = "Number of stories per page",
+            nullable
+        ),
+        ("page_token" = Option<String>,
+            Query,
+            description = "Page cursor",
+            nullable
+        )
+    ),
     responses(
-        (status = 200, description = "Get a page of stories", body = Stories)
+        (status = 200, description = "A page of stories", body = Stories)
     )
 )]
 async fn get_stories(
@@ -82,23 +96,29 @@ async fn get_stories(
     Ok(Json(resp))
 }
 
-/// Get all tasks for a story
+/// Get tasks for a story
 #[utoipa::path(
     get,
     path = "/stories/{id}/tasks",
     tag = "Story",
     params(
-        ("id" = Uuid, Path, description = "Story id")
+        ("id" = Uuid, Path, description = "Story id"),
+        ("status" = Option<String>, Query, description = "Task status", nullable)
     ),
     responses(
-        (status = 200, description = "Get tasks for a story", body = [Task])
+        (status = 200, description = "An array of tasks", body = [Task])
     )
 )]
 async fn get_tasks(
+    params: Option<Query<TaskParams>>,
     Path(story_id): Path<Uuid>,
     State(ctx): State<Arc<Ctx>>,
 ) -> Result<impl IntoResponse> {
-    let tasks = ctx.list_tasks(story_id).await?;
+    let q = params.unwrap_or_default();
+    let mut tasks = ctx.list_tasks(story_id).await?;
+    if let Some(status) = q.status() {
+        tasks.retain(|t| t.status == status);
+    }
     Ok(Json(tasks))
 }
 

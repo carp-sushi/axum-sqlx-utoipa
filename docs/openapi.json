@@ -19,18 +19,22 @@
         "parameters": [
           {
             "name": "page_size",
-            "in": "path",
-            "required": true,
+            "in": "query",
+            "description": "Number of stories per page",
+            "required": false,
             "schema": {
               "type": "integer",
               "format": "int32",
-              "nullable": true
+              "nullable": true,
+              "maximum": 1000,
+              "minimum": 10
             }
           },
           {
             "name": "page_token",
-            "in": "path",
-            "required": true,
+            "in": "query",
+            "description": "Page cursor",
+            "required": false,
             "schema": {
               "type": "string",
               "nullable": true
@@ -39,7 +43,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Get a page of stories",
+            "description": "A page of stories",
             "content": {
               "application/json": {
                 "schema": {
@@ -111,7 +115,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Get a story by id",
+            "description": "The story",
             "content": {
               "application/json": {
                 "schema": {
@@ -225,7 +229,7 @@
         "tags": [
           "Story"
         ],
-        "summary": "Get all tasks for a story",
+        "summary": "Get tasks for a story",
         "operationId": "get_tasks",
         "parameters": [
           {
@@ -237,11 +241,21 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Task status",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
           }
         ],
         "responses": {
           "200": {
-            "description": "Get tasks for a story",
+            "description": "An array of tasks",
             "content": {
               "application/json": {
                 "schema": {
