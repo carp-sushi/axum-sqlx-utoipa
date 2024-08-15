@@ -33,7 +33,7 @@
           {
             "name": "page_token",
             "in": "query",
-            "description": "Page cursor",
+            "description": "Page cursor (next_page from response)",
             "required": false,
             "schema": {
               "type": "string",

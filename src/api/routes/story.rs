@@ -76,7 +76,7 @@ async fn get_story(Path(id): Path<Uuid>, State(ctx): State<Arc<Ctx>>) -> Result<
         ),
         ("page_token" = Option<String>,
             Query,
-            description = "Page cursor",
+            description = "Page cursor (next_page from response)",
             nullable
         )
     ),
@@ -114,6 +114,7 @@ async fn get_tasks(
     Path(story_id): Path<Uuid>,
     State(ctx): State<Arc<Ctx>>,
 ) -> Result<impl IntoResponse> {
+    tracing::debug!("params: {:?}", params);
     let q = params.unwrap_or_default();
     let mut tasks = ctx.list_tasks(story_id).await?;
     if let Some(status) = q.status() {
