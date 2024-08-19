@@ -4,11 +4,14 @@ use utoipa::ToSchema;
 use uuid::Uuid;
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, ToSchema)]
-pub struct Story {
+pub struct StoryFile {
     pub id: Uuid,
-    pub name: String,
+    pub story_id: Uuid,
     #[serde(skip_serializing)]
-    pub seqno: i64,
+    pub storage_id: Uuid,
+    pub name: String,
+    pub size: i64,
+    pub content_type: String,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }

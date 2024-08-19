@@ -1,16 +1,19 @@
-use axum::Router;
+use axum::{extract::DefaultBodyLimit, Router};
 use std::sync::Arc;
+use tower_http::limit::RequestBodyLimitLayer;
 use utoipa::{openapi::OpenApi as OpenApiDocs, OpenApi};
 use utoipa_swagger_ui::SwaggerUi;
 
 mod ctx;
 mod dto;
-pub mod routes;
+mod routes;
 mod tracer;
 
 pub use ctx::Ctx;
 
 use routes::{status, story, task};
+
+const TEN_MB: usize = 100000000;
 
 /// The top-level API
 pub struct Api {
@@ -27,6 +30,8 @@ impl Api {
     pub fn routes(self) -> Router {
         tracer::wrap(
             Router::new()
+                .layer(DefaultBodyLimit::disable())
+                .layer(RequestBodyLimitLayer::new(TEN_MB))
                 .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", docs()))
                 .merge(status::routes())
                 .merge(story::routes())

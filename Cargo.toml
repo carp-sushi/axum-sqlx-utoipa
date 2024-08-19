@@ -15,6 +15,7 @@ axum = { version = "0.7", default-features = false, features = [
     "http1",
     "tokio",
     "matched-path",
+    "multipart",
 ] }
 base64 = "0.22"
 borsh = { version = "1", features = ["derive"] }
@@ -38,7 +39,7 @@ strum = "0.26"
 strum_macros = "0.26"
 thiserror = "1"
 tokio = { version = "1.33", features = ["macros", "rt-multi-thread"] }
-tower-http = { version = "0.5", features = ["trace"] }
+tower-http = { version = "0.5", features = ["limit", "trace"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 utoipa = { version = "4.2", features = ["axum_extras", "chrono", "uuid"] }

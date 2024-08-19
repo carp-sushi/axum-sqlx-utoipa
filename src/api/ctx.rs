@@ -1,24 +1,18 @@
-use crate::{driver::message::Messenger, repo::Repo};
-use std::{ops::Deref, sync::Arc};
+use uuid::Uuid;
+
+use crate::{driver::storage::Storage, repo::Repo};
+use std::sync::Arc;
 
 /// API context
 #[derive(Clone)]
 pub struct Ctx {
-    repo: Arc<Repo>,
-    pub messenger: Arc<Box<dyn Messenger>>,
+    pub repo: Arc<Repo>,
+    pub storage: Arc<Box<dyn Storage<Uuid>>>,
 }
 
 impl Ctx {
     /// Create a new api context.
-    pub fn new(repo: Arc<Repo>, messenger: Arc<Box<dyn Messenger>>) -> Self {
-        Self { repo, messenger }
-    }
-}
-
-// Allow access to calls on the inner repo.
-impl Deref for Ctx {
-    type Target = Arc<Repo>;
-    fn deref(&self) -> &Self::Target {
-        &self.repo
+    pub fn new(repo: Arc<Repo>, storage: Arc<Box<dyn Storage<Uuid>>>) -> Self {
+        Self { repo, storage }
     }
 }

@@ -1,3 +1,4 @@
+use axum::extract::multipart::MultipartError;
 use serde::Serialize;
 
 // Http support for errors
@@ -43,5 +44,11 @@ impl From<base64::DecodeError> for Error {
 impl From<std::io::Error> for Error {
     fn from(err: std::io::Error) -> Self {
         Error::internal(err.to_string())
+    }
+}
+
+impl From<MultipartError> for Error {
+    fn from(err: MultipartError) -> Self {
+        Error::invalid_args(&err.to_string())
     }
 }

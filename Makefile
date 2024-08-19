@@ -31,6 +31,7 @@ clean:
 
 .PHONY: run
 run:
+	@mkdir -p .storage
 	@cargo run --bin sqlx-todos
 
 .PHONY: release

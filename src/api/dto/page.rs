@@ -13,7 +13,7 @@ const MAX_PAGE_SIZE: i32 = 1000;
 
 /// The query parameters for getting a page of domain objects from a list endpoint.
 #[derive(Debug, Deserialize, Default)]
-pub(crate) struct PageParams {
+pub struct PageParams {
     pub page_size: Option<i32>,
     pub page_token: Option<String>,
 }
@@ -28,7 +28,7 @@ impl PageParams {
 
 /// A paging token for accessing previous, next pages of domain objects in a list call.
 #[derive(BorshSerialize, BorshDeserialize)]
-pub(crate) struct PageToken {
+pub struct PageToken {
     cursor: i64,
     ts: u64,
 }

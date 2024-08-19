@@ -6,11 +6,12 @@ use sqlx::migrate::Migrator;
 use sqlx_todos::{
     api::{Api, Ctx},
     config::Config,
-    driver::message::{email::EmailMessenger, sms::SmsMessenger, Messenger},
+    driver::storage::{fs::FileStorage, Storage},
     repo::Repo,
 };
 use std::{error::Error, sync::Arc};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use uuid::Uuid;
 
 // Embed migrations into the server binary.
 pub static MIGRATOR: Migrator = sqlx::migrate!();
@@ -43,16 +44,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let pool = Arc::new(pool);
     let repo = Arc::new(Repo::new(pool));
 
-    // Set up message driver
-    tracing::debug!("Loading {} messenger", config.messenger);
-    let messenger = if config.messenger == "sms" {
-        Arc::new(Box::new(SmsMessenger) as Box<dyn Messenger>)
-    } else {
-        Arc::new(Box::new(EmailMessenger) as Box<dyn Messenger>)
-    };
+    // Set up storage
+    let dir = config.storage_bucket.clone();
+    let storage = Arc::new(Box::new(FileStorage::new(dir)) as Box<dyn Storage<Uuid>>);
 
-    // Set up API
-    let ctx = Ctx::new(repo, messenger);
+    let ctx = Ctx::new(repo, storage);
     let api = Api::new(Arc::new(ctx));
 
     // Start server
