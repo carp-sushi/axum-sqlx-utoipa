@@ -45,6 +45,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let repo = Arc::new(Repo::new(pool));
 
     // Set up storage
+    assert!(config.storage_type == "file"); // TODO: support gcs, s3, etc...
     let dir = config.storage_bucket.clone();
     let storage = Arc::new(Box::new(FileStorage::new(dir)) as Box<dyn Storage<Uuid>>);
 

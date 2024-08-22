@@ -5,15 +5,14 @@ use utoipa::{openapi::OpenApi as OpenApiDocs, OpenApi};
 use utoipa_swagger_ui::SwaggerUi;
 
 mod ctx;
+pub use ctx::Ctx;
 mod dto;
 mod routes;
+use routes::{file, status, story, task};
 mod tracer;
 
-pub use ctx::Ctx;
-
-use routes::{status, story, task};
-
-const TEN_MB: usize = 100000000;
+// Cap file upload size
+const BODY_LIMIT: usize = 250 * 1000 * 1000;
 
 /// The top-level API
 pub struct Api {
@@ -31,10 +30,11 @@ impl Api {
         tracer::wrap(
             Router::new()
                 .layer(DefaultBodyLimit::disable())
-                .layer(RequestBodyLimitLayer::new(TEN_MB))
+                .layer(RequestBodyLimitLayer::new(BODY_LIMIT))
                 .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", docs()))
                 .merge(status::routes())
                 .merge(story::routes())
+                .merge(file::routes())
                 .merge(task::routes()),
         )
         .with_state(self.ctx)
@@ -44,6 +44,7 @@ impl Api {
 /// Combine OpenApi docs for internal routes.
 pub fn docs() -> OpenApiDocs {
     let mut api = story::ApiDoc::openapi();
+    api.merge(file::ApiDoc::openapi());
     api.merge(task::ApiDoc::openapi());
     api
 }

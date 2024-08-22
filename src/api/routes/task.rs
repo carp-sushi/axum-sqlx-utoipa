@@ -20,7 +20,7 @@ use uuid::Uuid;
 #[derive(utoipa::OpenApi)]
 #[openapi(
     paths(get_task, create_task, update_task, delete_task),
-    components(schemas(Task, Status, CreateTaskBody, PatchTaskBody, ErrorDto)),
+    components(schemas(CreateTaskBody, ErrorDto, PatchTaskBody, Status, Task)),
     tags((name = "Task"))
 )]
 pub struct ApiDoc;

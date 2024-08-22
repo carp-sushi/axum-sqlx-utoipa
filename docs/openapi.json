@@ -227,7 +227,7 @@
     "/stories/{id}/files": {
       "get": {
         "tags": [
-          "Story"
+          "File"
         ],
         "summary": "Get file metadata list for a story.",
         "operationId": "get_files",
@@ -271,7 +271,7 @@
       },
       "post": {
         "tags": [
-          "Story"
+          "File"
         ],
         "summary": "Add files to a story.",
         "operationId": "add_files",
@@ -327,7 +327,7 @@
     "/stories/{id}/files/{file_id}": {
       "get": {
         "tags": [
-          "Story"
+          "File"
         ],
         "summary": "Get file metadata.",
         "operationId": "get_file",
@@ -380,7 +380,7 @@
     "/stories/{id}/files/{file_id}/contents": {
       "get": {
         "tags": [
-          "Story"
+          "File"
         ],
         "summary": "Download file contents.",
         "operationId": "download_file",
@@ -849,6 +849,9 @@
   "tags": [
     {
       "name": "Story"
+    },
+    {
+      "name": "File"
     },
     {
       "name": "Task"

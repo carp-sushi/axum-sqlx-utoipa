@@ -1,5 +1,5 @@
 use super::Storage;
-use crate::Result;
+use crate::{Error, Result};
 use std::{
     fs::File,
     io::{Read, Write},
@@ -35,6 +35,9 @@ impl Storage<Uuid> for FileStorage {
 
     /// Write bytes to file
     async fn write(&self, bytes: &[u8]) -> Result<Uuid> {
+        if bytes.is_empty() {
+            return Err(Error::invalid_args("empty file"));
+        }
         let key = Uuid::new_v4();
         let mut file = File::create(self.path(key))?;
         file.write_all(bytes)?;

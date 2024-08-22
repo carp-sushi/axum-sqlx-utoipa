@@ -49,8 +49,8 @@ impl Config {
         let db_password = env::var("DB_PASS").expect("DB_PASS not set");
         let db_database = env::var("DB_NAME").expect("DB_NAME not set");
         let db_schema = env::var("DB_SCHEMA").unwrap_or("public".to_owned());
-        let storage_type = env::var("").unwrap_or("fs".to_owned());
-        let storage_bucket = env::var("").unwrap_or(".storage".to_owned());
+        let storage_type = env::var("STORAGE_TYPE").expect("STORAGE_TYPE not set");
+        let storage_bucket = env::var("STORAGE_BUCKET").expect("STORAGE_BUCKET not set");
 
         // Create config
         Self {
