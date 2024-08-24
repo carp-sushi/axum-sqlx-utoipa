@@ -43,4 +43,10 @@ impl Storage<Uuid> for FileStorage {
         file.write_all(bytes)?;
         Ok(key)
     }
+
+    /// Delete bytes for a key
+    async fn delete(&self, key: Uuid) -> Result<()> {
+        std::fs::remove_file(self.path(key))?;
+        Ok(())
+    }
 }

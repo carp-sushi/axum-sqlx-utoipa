@@ -2,7 +2,7 @@ use crate::{
     api::dto::{PageParams, PageToken, Stories, StoryBody, TaskParams},
     api::Ctx,
     domain::{Status, Story, Task},
-    error::ErrorDto,
+    error::Errors,
     Result,
 };
 use axum::{
@@ -20,7 +20,7 @@ use uuid::Uuid;
 #[derive(utoipa::OpenApi)]
 #[openapi(
     paths(get_story, get_stories, get_tasks, create_story, update_story, delete_story),
-    components(schemas(ErrorDto, Status, Stories, Story, StoryBody, Task)),
+    components(schemas(Errors, Status, Stories, Story, StoryBody, Task)),
     tags((name = "Story"))
 )]
 pub struct ApiDoc;
@@ -30,25 +30,26 @@ pub struct ApiDoc;
 pub fn routes() -> Router<Arc<Ctx>> {
     Router::new()
         .route("/stories", get(get_stories).post(create_story))
-        .route("/stories/:id", get(get_story).delete(delete_story).patch(update_story))
-        .route("/stories/:id/tasks", get(get_tasks))
+        .route("/stories/:story_id", get(get_story).delete(delete_story).patch(update_story))
+        .route("/stories/:story_id/tasks", get(get_tasks))
 }
 
 /// Get a story
 #[utoipa::path(
     get,
-    path = "/stories/{id}",
+    path = "/stories/{story_id}",
     tag = "Story",
-    params(
-        ("id" = Uuid, Path, description = "Story id")
-    ),
+    params(("story_id" = Uuid, Path, description = "Story id")),
     responses(
         (status = 200, description = "The story", body = Story),
-        (status = 404, description = "Story not found", body = ErrorDto)
+        (status = 404, description = "Story not found", body = Errors)
     )
 )]
-async fn get_story(Path(id): Path<Uuid>, State(ctx): State<Arc<Ctx>>) -> Result<impl IntoResponse> {
-    let story = ctx.repo.fetch_story(id).await?;
+async fn get_story(
+    Path(story_id): Path<Uuid>,
+    State(ctx): State<Arc<Ctx>>,
+) -> Result<impl IntoResponse> {
+    let story = ctx.repo.fetch_story(story_id).await?;
     Ok(Json(story))
 }
 
@@ -90,15 +91,13 @@ async fn get_stories(
 /// Get tasks for a story
 #[utoipa::path(
     get,
-    path = "/stories/{id}/tasks",
+    path = "/stories/{story_id}/tasks",
     tag = "Story",
     params(
-        ("id" = Uuid, Path, description = "Story id"),
+        ("story_id" = Uuid, Path, description = "Story id"),
         ("status" = Option<String>, Query, description = "Task status", nullable)
     ),
-    responses(
-        (status = 200, description = "An array of tasks", body = [Task])
-    )
+    responses((status = 200, description = "An array of tasks", body = [Task]))
 )]
 async fn get_tasks(
     params: Option<Query<TaskParams>>,
@@ -122,7 +121,7 @@ async fn get_tasks(
     request_body = StoryBody,
     responses(
         (status = 201, description = "Story created", body = Story),
-        (status = 400, description = "Invalid request body", body = ErrorDto)
+        (status = 400, description = "Invalid request body", body = Errors)
     )
 )]
 async fn create_story(
@@ -137,25 +136,25 @@ async fn create_story(
 /// Update a story
 #[utoipa::path(
     patch,
-    path = "/stories/{id}",
+    path = "/stories/{story_id}",
     tag = "Story",
     request_body = StoryBody,
     responses(
         (status = 200, description = "Story updated", body = Story),
-        (status = 400, description = "Invalid request body", body = ErrorDto),
-        (status = 404, description = "Story not found", body = ErrorDto)
+        (status = 400, description = "Invalid request body", body = Errors),
+        (status = 404, description = "Story not found", body = Errors)
     )
 )]
 async fn update_story(
-    Path(id): Path<Uuid>,
+    Path(story_id): Path<Uuid>,
     State(ctx): State<Arc<Ctx>>,
     Json(body): Json<StoryBody>,
 ) -> Result<impl IntoResponse> {
     let name = body.validate()?;
     let story = ctx
         .repo
-        .fetch_story(id)
-        .and_then(|_| ctx.repo.update_story(id, name))
+        .fetch_story(story_id)
+        .and_then(|_| ctx.repo.update_story(story_id, name))
         .await?;
     Ok(Json(story))
 }
@@ -163,21 +162,19 @@ async fn update_story(
 /// Delete a story
 #[utoipa::path(
     delete,
-    path = "/stories/{id}",
+    path = "/stories/{story_id}",
     tag = "Story",
-    params(
-        ("id" = Uuid, Path, description = "Story id")
-    ),
+    params(("story_id" = Uuid, Path, description = "Story id")),
     responses(
         (status = 204, description = "Story deleted"),
         (status = 404, description = "Story not found")
     )
 )]
-async fn delete_story(Path(id): Path<Uuid>, State(ctx): State<Arc<Ctx>>) -> StatusCode {
+async fn delete_story(Path(story_id): Path<Uuid>, State(ctx): State<Arc<Ctx>>) -> StatusCode {
     let result = ctx
         .repo
-        .fetch_story(id)
-        .and_then(|_| ctx.repo.delete_story(id))
+        .fetch_story(story_id)
+        .and_then(|_| ctx.repo.delete_story(story_id))
         .await;
     if let Err(err) = result {
         return StatusCode::from(err);

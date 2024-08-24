@@ -86,7 +86,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorDto"
+                  "$ref": "#/components/schemas/Errors"
                 }
               }
             }
@@ -94,7 +94,7 @@
         }
       }
     },
-    "/stories/{id}": {
+    "/stories/{story_id}": {
       "get": {
         "tags": [
           "Story"
@@ -103,7 +103,7 @@
         "operationId": "get_story",
         "parameters": [
           {
-            "name": "id",
+            "name": "story_id",
             "in": "path",
             "description": "Story id",
             "required": true,
@@ -129,7 +129,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorDto"
+                  "$ref": "#/components/schemas/Errors"
                 }
               }
             }
@@ -144,7 +144,7 @@
         "operationId": "delete_story",
         "parameters": [
           {
-            "name": "id",
+            "name": "story_id",
             "in": "path",
             "description": "Story id",
             "required": true,
@@ -171,7 +171,7 @@
         "operationId": "update_story",
         "parameters": [
           {
-            "name": "id",
+            "name": "story_id",
             "in": "path",
             "required": true,
             "schema": {
@@ -206,7 +206,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorDto"
+                  "$ref": "#/components/schemas/Errors"
                 }
               }
             }
@@ -216,7 +216,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorDto"
+                  "$ref": "#/components/schemas/Errors"
                 }
               }
             }
@@ -224,7 +224,7 @@
         }
       }
     },
-    "/stories/{id}/files": {
+    "/stories/{story_id}/files": {
       "get": {
         "tags": [
           "File"
@@ -233,7 +233,7 @@
         "operationId": "get_files",
         "parameters": [
           {
-            "name": "id",
+            "name": "story_id",
             "in": "path",
             "description": "Story id",
             "required": true,
@@ -262,7 +262,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorDto"
+                  "$ref": "#/components/schemas/Errors"
                 }
               }
             }
@@ -277,7 +277,7 @@
         "operationId": "add_files",
         "parameters": [
           {
-            "name": "id",
+            "name": "story_id",
             "in": "path",
             "description": "Story id",
             "required": true,
@@ -316,7 +316,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorDto"
+                  "$ref": "#/components/schemas/Errors"
                 }
               }
             }
@@ -324,7 +324,7 @@
         }
       }
     },
-    "/stories/{id}/files/{file_id}": {
+    "/stories/{story_id}/files/{file_id}": {
       "get": {
         "tags": [
           "File"
@@ -333,7 +333,7 @@
         "operationId": "get_file",
         "parameters": [
           {
-            "name": "id",
+            "name": "story_id",
             "in": "path",
             "description": "Story id",
             "required": true,
@@ -369,15 +369,52 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorDto"
+                  "$ref": "#/components/schemas/Errors"
                 }
               }
             }
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "File"
+        ],
+        "summary": "Delete a file",
+        "operationId": "delete_file",
+        "parameters": [
+          {
+            "name": "story_id",
+            "in": "path",
+            "description": "Story id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "file_id",
+            "in": "path",
+            "description": "File id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "File deleted"
+          },
+          "404": {
+            "description": "File not found"
+          }
+        }
       }
     },
-    "/stories/{id}/files/{file_id}/contents": {
+    "/stories/{story_id}/files/{file_id}/contents": {
       "get": {
         "tags": [
           "File"
@@ -386,7 +423,7 @@
         "operationId": "download_file",
         "parameters": [
           {
-            "name": "id",
+            "name": "story_id",
             "in": "path",
             "description": "Story id",
             "required": true,
@@ -415,7 +452,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorDto"
+                  "$ref": "#/components/schemas/Errors"
                 }
               }
             }
@@ -423,7 +460,7 @@
         }
       }
     },
-    "/stories/{id}/tasks": {
+    "/stories/{story_id}/tasks": {
       "get": {
         "tags": [
           "Story"
@@ -432,7 +469,7 @@
         "operationId": "get_tasks",
         "parameters": [
           {
-            "name": "id",
+            "name": "story_id",
             "in": "path",
             "description": "Story id",
             "required": true,
@@ -502,7 +539,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorDto"
+                  "$ref": "#/components/schemas/Errors"
                 }
               }
             }
@@ -510,7 +547,7 @@
         }
       }
     },
-    "/tasks/{id}": {
+    "/tasks/{task_id}": {
       "get": {
         "tags": [
           "Task"
@@ -519,7 +556,7 @@
         "operationId": "get_task",
         "parameters": [
           {
-            "name": "id",
+            "name": "task_id",
             "in": "path",
             "description": "Task id",
             "required": true,
@@ -545,7 +582,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorDto"
+                  "$ref": "#/components/schemas/Errors"
                 }
               }
             }
@@ -560,7 +597,7 @@
         "operationId": "delete_task",
         "parameters": [
           {
-            "name": "id",
+            "name": "task_id",
             "in": "path",
             "description": "The task id",
             "required": true,
@@ -587,7 +624,7 @@
         "operationId": "update_task",
         "parameters": [
           {
-            "name": "id",
+            "name": "task_id",
             "in": "path",
             "required": true,
             "schema": {
@@ -622,7 +659,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorDto"
+                  "$ref": "#/components/schemas/Errors"
                 }
               }
             }
@@ -632,7 +669,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorDto"
+                  "$ref": "#/components/schemas/Errors"
                 }
               }
             }
@@ -676,7 +713,7 @@
           }
         }
       },
-      "ErrorDto": {
+      "Errors": {
         "type": "object",
         "description": "The type sent as an error response to the client.",
         "required": [

@@ -9,7 +9,7 @@ use utoipa::ToSchema;
 
 /// The type sent as an error response to the client.
 #[derive(Debug, Serialize, ToSchema)]
-pub struct ErrorDto {
+pub struct Errors {
     errors: Vec<String>,
 }
 
@@ -17,8 +17,8 @@ pub struct ErrorDto {
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
         let status = http_status_code(&self);
-        let error = http_error_dto(&self);
-        (status, Json(error)).into_response()
+        let errors = http_errors(&self);
+        (status, Json(errors)).into_response()
     }
 }
 
@@ -43,7 +43,7 @@ fn http_status_code(err: &Error) -> StatusCode {
 }
 
 /// Get response type for an error.
-fn http_error_dto(err: &Error) -> ErrorDto {
+fn http_errors(err: &Error) -> Errors {
     let errors = match err {
         Error::InvalidArgs { messages } => messages.to_owned(),
         Error::NotFound { message } => vec![message.to_owned()],
@@ -52,5 +52,5 @@ fn http_error_dto(err: &Error) -> ErrorDto {
             vec![message.to_owned()]
         }
     };
-    ErrorDto { errors }
+    Errors { errors }
 }

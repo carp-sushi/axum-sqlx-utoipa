@@ -4,7 +4,7 @@ use serde::Serialize;
 // Http support for errors
 mod http;
 
-pub use http::ErrorDto;
+pub use http::Errors;
 
 /// Project level error type
 #[derive(thiserror::Error, Debug, Serialize)]

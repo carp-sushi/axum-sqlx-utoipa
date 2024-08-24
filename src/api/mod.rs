@@ -1,6 +1,5 @@
-use axum::{extract::DefaultBodyLimit, Router};
+use axum::Router;
 use std::sync::Arc;
-use tower_http::limit::RequestBodyLimitLayer;
 use utoipa::{openapi::OpenApi as OpenApiDocs, OpenApi};
 use utoipa_swagger_ui::SwaggerUi;
 
@@ -10,9 +9,6 @@ mod dto;
 mod routes;
 use routes::{file, status, story, task};
 mod tracer;
-
-// Cap file upload size
-const BODY_LIMIT: usize = 250 * 1000 * 1000;
 
 /// The top-level API
 pub struct Api {
@@ -29,8 +25,6 @@ impl Api {
     pub fn routes(self) -> Router {
         tracer::wrap(
             Router::new()
-                .layer(DefaultBodyLimit::disable())
-                .layer(RequestBodyLimitLayer::new(BODY_LIMIT))
                 .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", docs()))
                 .merge(status::routes())
                 .merge(story::routes())

@@ -19,7 +19,9 @@ pub(crate) mod story {
         | RETURNING id, name, seqno, created_at, updated_at"#;
 
     pub const DELETE: &str = r#"DELETE FROM stories WHERE id = $1"#;
+}
 
+pub mod file {
     pub const ADD_FILE: &str = r#"
         | INSERT INTO story_files (story_id, storage_id, name, size, content_type)
         | VALUES ($1, $2, $3, $4, $5)
@@ -35,6 +37,10 @@ pub(crate) mod story {
         | SELECT id, story_id, storage_id, name, size, content_type, created_at, updated_at
         | FROM story_files
         | WHERE id = $1 AND story_id = $2"#;
+
+    pub const DELETE_BY_STORY: &str = "DELETE FROM story_files WHERE story_id = $1";
+
+    pub const DELETE_FILE: &str = "DELETE FROM story_files WHERE id = $1";
 }
 
 pub(crate) mod task {
