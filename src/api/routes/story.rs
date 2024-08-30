@@ -1,5 +1,5 @@
 use crate::{
-    api::dto::{PageParams, PageToken, Stories, StoryBody, TaskParams},
+    api::dto::{PageParams, PageToken, Stories, StoryRequest, TaskParams},
     api::Ctx,
     domain::{Status, Story, Task},
     error::Errors,
@@ -20,7 +20,7 @@ use uuid::Uuid;
 #[derive(utoipa::OpenApi)]
 #[openapi(
     paths(get_story, get_stories, get_tasks, create_story, update_story, delete_story),
-    components(schemas(Errors, Status, Stories, Story, StoryBody, Task)),
+    components(schemas(Errors, Status, Stories, Story, StoryRequest, Task)),
     tags((name = "Story"))
 )]
 pub struct ApiDoc;
@@ -38,12 +38,12 @@ pub fn routes() -> Router<Arc<Ctx>> {
 #[utoipa::path(
     get,
     path = "/stories/{story_id}",
-    tag = "Story",
-    params(("story_id" = Uuid, Path, description = "Story id")),
+    params(("story_id" = Uuid, Path, description = "The story id")),
     responses(
         (status = 200, description = "The story", body = Story),
-        (status = 404, description = "Story not found", body = Errors)
-    )
+        (status = 404, description = "The story was not found", body = Errors)
+    ),
+    tag = "Story"
 )]
 async fn get_story(
     Path(story_id): Path<Uuid>,
@@ -57,24 +57,24 @@ async fn get_story(
 #[utoipa::path(
     get,
     path = "/stories",
-    tag = "Story",
     params(
         ("page_size" = Option<i32>,
             Query,
             minimum = 10,
             maximum = 1000,
-            description = "Number of stories per page",
+            description = "The number of stories per page",
             nullable
         ),
         ("page_token" = Option<String>,
             Query,
-            description = "Page cursor (next_page from response)",
+            description = "The next page cursor (next_page from response)",
             nullable
         )
     ),
     responses(
         (status = 200, description = "A page of stories", body = Stories)
-    )
+    ),
+    tag = "Story"
 )]
 async fn get_stories(
     params: Option<Query<PageParams>>,
@@ -92,12 +92,14 @@ async fn get_stories(
 #[utoipa::path(
     get,
     path = "/stories/{story_id}/tasks",
-    tag = "Story",
     params(
-        ("story_id" = Uuid, Path, description = "Story id"),
-        ("status" = Option<String>, Query, description = "Task status", nullable)
+        ("story_id" = Uuid, Path, description = "The story id"),
+        ("status" = Option<String>, Query, description = "The task status filter", nullable)
     ),
-    responses((status = 200, description = "An array of tasks", body = [Task]))
+    responses(
+        (status = 200, description = "The tasks for the story", body = [Task])
+    ),
+    tag = "Story"
 )]
 async fn get_tasks(
     params: Option<Query<TaskParams>>,
@@ -117,18 +119,18 @@ async fn get_tasks(
 #[utoipa::path(
     post,
     path = "/stories",
-    tag = "Story",
-    request_body = StoryBody,
+    request_body = StoryRequest,
     responses(
-        (status = 201, description = "Story created", body = Story),
-        (status = 400, description = "Invalid request body", body = Errors)
-    )
+        (status = 201, description = "The story was created", body = Story),
+        (status = 400, description = "The request body was invalid", body = Errors)
+    ),
+    tag = "Story"
 )]
 async fn create_story(
     State(ctx): State<Arc<Ctx>>,
-    Json(body): Json<StoryBody>,
+    Json(req): Json<StoryRequest>,
 ) -> Result<impl IntoResponse> {
-    let name = body.validate()?;
+    let name = req.validate()?;
     let story = ctx.repo.create_story(name).await?;
     Ok((StatusCode::CREATED, Json(story)))
 }
@@ -137,20 +139,21 @@ async fn create_story(
 #[utoipa::path(
     patch,
     path = "/stories/{story_id}",
-    tag = "Story",
-    request_body = StoryBody,
+    params(("story_id" = Uuid, Path, description = "The story id")),
+    request_body = StoryRequest,
     responses(
-        (status = 200, description = "Story updated", body = Story),
-        (status = 400, description = "Invalid request body", body = Errors),
-        (status = 404, description = "Story not found", body = Errors)
-    )
+        (status = 200, description = "The story was updated", body = Story),
+        (status = 400, description = "The request body was invalid", body = Errors),
+        (status = 404, description = "The story not not found", body = Errors)
+    ),
+    tag = "Story"
 )]
 async fn update_story(
     Path(story_id): Path<Uuid>,
     State(ctx): State<Arc<Ctx>>,
-    Json(body): Json<StoryBody>,
+    Json(req): Json<StoryRequest>,
 ) -> Result<impl IntoResponse> {
-    let name = body.validate()?;
+    let name = req.validate()?;
     let story = ctx
         .repo
         .fetch_story(story_id)
@@ -163,12 +166,12 @@ async fn update_story(
 #[utoipa::path(
     delete,
     path = "/stories/{story_id}",
-    tag = "Story",
-    params(("story_id" = Uuid, Path, description = "Story id")),
+    params(("story_id" = Uuid, Path, description = "The story id")),
     responses(
-        (status = 204, description = "Story deleted"),
-        (status = 404, description = "Story not found")
-    )
+        (status = 204, description = "The story was deleted"),
+        (status = 404, description = "The story was not found")
+    ),
+    tag = "Story"
 )]
 async fn delete_story(Path(story_id): Path<Uuid>, State(ctx): State<Arc<Ctx>>) -> StatusCode {
     let result = ctx

@@ -35,13 +35,9 @@ impl Repo {
         content_type: String,
     ) -> Result<StoryFile> {
         if size <= 0 {
-            return Err(Error::invalid_args(&format!(
-                "invalid file size: {}: size={}",
-                name, size
-            )));
+            return Err(Error::invalid_args("file size must be > 0"));
         }
-
-        let query = sql::file::ADD_FILE.strip_margin();
+        let query = sql::file::CREATE.strip_margin();
 
         let story_file = sqlx::query_as(&query)
             .bind(story_id)
@@ -57,7 +53,7 @@ impl Repo {
 
     /// List all files for a story.
     pub async fn list_files(&self, story_id: Uuid) -> Result<Vec<StoryFile>> {
-        let query = sql::file::LIST_FILES.strip_margin();
+        let query = sql::file::LIST.strip_margin();
 
         let mut result_set = sqlx::query(&query)
             .bind(story_id)
@@ -76,7 +72,7 @@ impl Repo {
 
     /// Select a file by id and story id
     pub async fn fetch_file(&self, story_id: Uuid, file_id: Uuid) -> Result<StoryFile> {
-        let query = sql::file::FETCH_FILE.strip_margin();
+        let query = sql::file::FETCH.strip_margin();
 
         let file_opt = sqlx::query_as(&query)
             .bind(file_id)
@@ -92,7 +88,7 @@ impl Repo {
 
     /// Delete a file
     pub async fn delete_file(&self, id: Uuid) -> Result<u64> {
-        let query = sql::file::DELETE_FILE.strip_margin();
+        let query = sql::file::DELETE.strip_margin();
         let result = sqlx::query(&query).bind(id).execute(self.db_ref()).await?;
         Ok(result.rows_affected())
     }

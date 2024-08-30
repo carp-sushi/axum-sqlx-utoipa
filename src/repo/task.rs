@@ -19,10 +19,11 @@ impl FromRow<'_, PgRow> for Task {
         let story_id = row.try_get("story_id")?;
         let name = row.try_get("name")?;
         let status: String = row.try_get("status")?;
-        // Manually convert to enum type
-        let status = Status::from_str(&status).map_err(|err| sqlx::Error::Decode(Box::new(err)))?;
         let created_at = row.try_get("created_at")?;
         let updated_at = row.try_get("updated_at")?;
+
+        // Manually convert to enum type
+        let status = Status::from_str(&status).map_err(|err| sqlx::Error::Decode(Box::new(err)))?;
 
         Ok(Self {
             id,

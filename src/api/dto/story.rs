@@ -8,11 +8,11 @@ const MAX_NAME_LEN: usize = 100;
 
 /// The request body for creating or updating stories
 #[derive(Debug, Deserialize, ToSchema)]
-pub struct StoryBody {
+pub struct StoryRequest {
     name: String,
 }
 
-impl StoryBody {
+impl StoryRequest {
     /// Validate a story create/update request.
     pub fn validate(&self) -> Result<String> {
         let name = self.name.trim().to_string();

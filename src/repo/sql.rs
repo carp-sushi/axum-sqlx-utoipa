@@ -22,25 +22,25 @@ pub(crate) mod story {
 }
 
 pub mod file {
-    pub const ADD_FILE: &str = r#"
+    pub const CREATE: &str = r#"
         | INSERT INTO story_files (story_id, storage_id, name, size, content_type)
         | VALUES ($1, $2, $3, $4, $5)
         | RETURNING id, story_id, storage_id, name, size, content_type, created_at, updated_at"#;
 
-    pub const LIST_FILES: &str = r#"
+    pub const LIST: &str = r#"
         | SELECT id, story_id, storage_id, name, size, content_type, created_at, updated_at
         | FROM story_files
         | WHERE story_id = $1
         | ORDER BY created_at LIMIT $2"#;
 
-    pub const FETCH_FILE: &str = r#"
+    pub const FETCH: &str = r#"
         | SELECT id, story_id, storage_id, name, size, content_type, created_at, updated_at
         | FROM story_files
         | WHERE id = $1 AND story_id = $2"#;
 
     pub const DELETE_BY_STORY: &str = "DELETE FROM story_files WHERE story_id = $1";
 
-    pub const DELETE_FILE: &str = "DELETE FROM story_files WHERE id = $1";
+    pub const DELETE: &str = "DELETE FROM story_files WHERE id = $1";
 }
 
 pub(crate) mod task {

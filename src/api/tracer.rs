@@ -10,7 +10,7 @@ use tower_http::trace::TraceLayer;
 use tracing::Span;
 
 // Cap file upload size
-const BODY_LIMIT: usize = 250 * 1000 * 1000;
+const BODY_LIMIT: usize = 250 * 1000 * 1000; // ~250m
 
 /// Create a layered router with tower http request tracing.
 pub(crate) fn wrap(routes: Router<Arc<Ctx>>) -> Router<Arc<Ctx>> {

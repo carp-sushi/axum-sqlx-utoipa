@@ -20,7 +20,7 @@
           {
             "name": "page_size",
             "in": "query",
-            "description": "Number of stories per page",
+            "description": "The number of stories per page",
             "required": false,
             "schema": {
               "type": "integer",
@@ -33,7 +33,7 @@
           {
             "name": "page_token",
             "in": "query",
-            "description": "Page cursor (next_page from response)",
+            "description": "The next page cursor (next_page from response)",
             "required": false,
             "schema": {
               "type": "string",
@@ -64,7 +64,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/StoryBody"
+                "$ref": "#/components/schemas/StoryRequest"
               }
             }
           },
@@ -72,7 +72,7 @@
         },
         "responses": {
           "201": {
-            "description": "Story created",
+            "description": "The story was created",
             "content": {
               "application/json": {
                 "schema": {
@@ -82,7 +82,7 @@
             }
           },
           "400": {
-            "description": "Invalid request body",
+            "description": "The request body was invalid",
             "content": {
               "application/json": {
                 "schema": {
@@ -105,7 +105,7 @@
           {
             "name": "story_id",
             "in": "path",
-            "description": "Story id",
+            "description": "The story id",
             "required": true,
             "schema": {
               "type": "string",
@@ -125,7 +125,7 @@
             }
           },
           "404": {
-            "description": "Story not found",
+            "description": "The story was not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -146,7 +146,7 @@
           {
             "name": "story_id",
             "in": "path",
-            "description": "Story id",
+            "description": "The story id",
             "required": true,
             "schema": {
               "type": "string",
@@ -156,10 +156,10 @@
         ],
         "responses": {
           "204": {
-            "description": "Story deleted"
+            "description": "The story was deleted"
           },
           "404": {
-            "description": "Story not found"
+            "description": "The story was not found"
           }
         }
       },
@@ -173,6 +173,7 @@
           {
             "name": "story_id",
             "in": "path",
+            "description": "The story id",
             "required": true,
             "schema": {
               "type": "string",
@@ -184,7 +185,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/StoryBody"
+                "$ref": "#/components/schemas/StoryRequest"
               }
             }
           },
@@ -192,7 +193,7 @@
         },
         "responses": {
           "200": {
-            "description": "Story updated",
+            "description": "The story was updated",
             "content": {
               "application/json": {
                 "schema": {
@@ -202,7 +203,7 @@
             }
           },
           "400": {
-            "description": "Invalid request body",
+            "description": "The request body was invalid",
             "content": {
               "application/json": {
                 "schema": {
@@ -212,7 +213,7 @@
             }
           },
           "404": {
-            "description": "Story not found",
+            "description": "The story not not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -229,13 +230,13 @@
         "tags": [
           "File"
         ],
-        "summary": "Get file metadata list for a story.",
+        "summary": "List files for a story.",
         "operationId": "get_files",
         "parameters": [
           {
             "name": "story_id",
             "in": "path",
-            "description": "Story id",
+            "description": "The parent story id",
             "required": true,
             "schema": {
               "type": "string",
@@ -245,7 +246,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Array of file metadata",
+            "description": "A file metadata array for the story",
             "content": {
               "application/json": {
                 "schema": {
@@ -258,7 +259,7 @@
             }
           },
           "404": {
-            "description": "Story not found",
+            "description": "The parent story was not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -279,7 +280,7 @@
           {
             "name": "story_id",
             "in": "path",
-            "description": "Story id",
+            "description": "The parent story id",
             "required": true,
             "schema": {
               "type": "string",
@@ -291,7 +292,7 @@
           "content": {
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/AddFile"
+                "$ref": "#/components/schemas/FileUpload"
               }
             }
           },
@@ -299,7 +300,7 @@
         },
         "responses": {
           "200": {
-            "description": "Array of file metadata",
+            "description": "A metadata array for the uploaded files",
             "content": {
               "application/json": {
                 "schema": {
@@ -312,7 +313,7 @@
             }
           },
           "404": {
-            "description": "Story not found",
+            "description": "The parent story was not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -335,7 +336,7 @@
           {
             "name": "story_id",
             "in": "path",
-            "description": "Story id",
+            "description": "The parent story id",
             "required": true,
             "schema": {
               "type": "string",
@@ -345,7 +346,7 @@
           {
             "name": "file_id",
             "in": "path",
-            "description": "File id",
+            "description": "The id of the file metadata",
             "required": true,
             "schema": {
               "type": "string",
@@ -355,7 +356,7 @@
         ],
         "responses": {
           "200": {
-            "description": "File metadata",
+            "description": "The file metadata",
             "content": {
               "application/json": {
                 "schema": {
@@ -365,7 +366,7 @@
             }
           },
           "404": {
-            "description": "File not found",
+            "description": "The file was not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -386,7 +387,7 @@
           {
             "name": "story_id",
             "in": "path",
-            "description": "Story id",
+            "description": "The parent story id",
             "required": true,
             "schema": {
               "type": "string",
@@ -396,7 +397,7 @@
           {
             "name": "file_id",
             "in": "path",
-            "description": "File id",
+            "description": "The id of the file to delete",
             "required": true,
             "schema": {
               "type": "string",
@@ -406,10 +407,10 @@
         ],
         "responses": {
           "204": {
-            "description": "File deleted"
+            "description": "The file was deleted successfully"
           },
           "404": {
-            "description": "File not found"
+            "description": "The file was not found"
           }
         }
       }
@@ -425,7 +426,7 @@
           {
             "name": "story_id",
             "in": "path",
-            "description": "Story id",
+            "description": "The parent story id",
             "required": true,
             "schema": {
               "type": "string",
@@ -435,7 +436,7 @@
           {
             "name": "file_id",
             "in": "path",
-            "description": "File id",
+            "description": "The id of the file to download",
             "required": true,
             "schema": {
               "type": "string",
@@ -445,10 +446,10 @@
         ],
         "responses": {
           "200": {
-            "description": "File contents"
+            "description": "The contents of the file"
           },
           "404": {
-            "description": "File not found",
+            "description": "The file was not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -471,7 +472,7 @@
           {
             "name": "story_id",
             "in": "path",
-            "description": "Story id",
+            "description": "The story id",
             "required": true,
             "schema": {
               "type": "string",
@@ -481,7 +482,7 @@
           {
             "name": "status",
             "in": "query",
-            "description": "Task status",
+            "description": "The task status filter",
             "required": false,
             "schema": {
               "type": "string",
@@ -491,7 +492,7 @@
         ],
         "responses": {
           "200": {
-            "description": "An array of tasks",
+            "description": "The tasks for the story",
             "content": {
               "application/json": {
                 "schema": {
@@ -517,7 +518,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateTaskBody"
+                "$ref": "#/components/schemas/CreateTaskRequest"
               }
             }
           },
@@ -525,7 +526,7 @@
         },
         "responses": {
           "201": {
-            "description": "Task created",
+            "description": "The task was created",
             "content": {
               "application/json": {
                 "schema": {
@@ -535,7 +536,7 @@
             }
           },
           "400": {
-            "description": "Invalid requesst body",
+            "description": "The requesst body was invalid",
             "content": {
               "application/json": {
                 "schema": {
@@ -558,7 +559,7 @@
           {
             "name": "task_id",
             "in": "path",
-            "description": "Task id",
+            "description": "The task id",
             "required": true,
             "schema": {
               "type": "string",
@@ -568,7 +569,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Get a task by id",
+            "description": "The task",
             "content": {
               "application/json": {
                 "schema": {
@@ -578,7 +579,7 @@
             }
           },
           "404": {
-            "description": "Task not found",
+            "description": "The task was not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -609,10 +610,10 @@
         ],
         "responses": {
           "204": {
-            "description": "Task deleted"
+            "description": "The task was deleted"
           },
           "404": {
-            "description": "Task not found"
+            "description": "The task was not found"
           }
         }
       },
@@ -626,6 +627,7 @@
           {
             "name": "task_id",
             "in": "path",
+            "description": "The task id",
             "required": true,
             "schema": {
               "type": "string",
@@ -637,7 +639,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PatchTaskBody"
+                "$ref": "#/components/schemas/UpdateTaskRequest"
               }
             }
           },
@@ -645,7 +647,7 @@
         },
         "responses": {
           "200": {
-            "description": "Task updated",
+            "description": "The task was updated",
             "content": {
               "application/json": {
                 "schema": {
@@ -655,7 +657,7 @@
             }
           },
           "400": {
-            "description": "Invalid request body",
+            "description": "The request body was invalid",
             "content": {
               "application/json": {
                 "schema": {
@@ -665,7 +667,7 @@
             }
           },
           "404": {
-            "description": "Task not found",
+            "description": "The task was not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -680,19 +682,7 @@
   },
   "components": {
     "schemas": {
-      "AddFile": {
-        "type": "object",
-        "required": [
-          "file"
-        ],
-        "properties": {
-          "file": {
-            "type": "string",
-            "format": "binary"
-          }
-        }
-      },
-      "CreateTaskBody": {
+      "CreateTaskRequest": {
         "type": "object",
         "description": "The POST body for creating tasks",
         "required": [
@@ -728,17 +718,15 @@
           }
         }
       },
-      "PatchTaskBody": {
+      "FileUpload": {
         "type": "object",
-        "description": "The PATCH body for updating tasks",
+        "required": [
+          "file"
+        ],
         "properties": {
-          "name": {
+          "file": {
             "type": "string",
-            "nullable": true
-          },
-          "status": {
-            "type": "string",
-            "nullable": true
+            "format": "binary"
           }
         }
       },
@@ -794,18 +782,6 @@
           }
         }
       },
-      "StoryBody": {
-        "type": "object",
-        "description": "The request body for creating or updating stories",
-        "required": [
-          "name"
-        ],
-        "properties": {
-          "name": {
-            "type": "string"
-          }
-        }
-      },
       "StoryFile": {
         "type": "object",
         "required": [
@@ -846,6 +822,18 @@
           }
         }
       },
+      "StoryRequest": {
+        "type": "object",
+        "description": "The request body for creating or updating stories",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        }
+      },
       "Task": {
         "type": "object",
         "required": [
@@ -878,6 +866,20 @@
           "updated_at": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "UpdateTaskRequest": {
+        "type": "object",
+        "description": "The PATCH body for updating tasks",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "nullable": true
           }
         }
       }

@@ -49,6 +49,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let dir = config.storage_bucket.clone();
     let storage = Arc::new(Box::new(FileStorage::new(dir)) as Box<dyn Storage<Uuid>>);
 
+    // Set up API
     let ctx = Ctx::new(repo, storage);
     let api = Api::new(Arc::new(ctx));
 

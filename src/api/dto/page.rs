@@ -93,8 +93,12 @@ mod tests {
 
     #[test]
     fn decode_default() {
-        let fallback = i64::MAX;
-        let output = PageToken::decode_or(&None, fallback).unwrap();
-        assert_eq!(fallback, output);
+        // Should get default when page token is None
+        let expect = i64::MAX;
+        let output = PageToken::decode_or(&None, expect).unwrap();
+        assert_eq!(output, expect);
+        // Invalid defaults should produce an error
+        assert!(PageToken::decode_or(&None, 0).is_err());
+        assert!(PageToken::decode_or(&None, -10).is_err());
     }
 }

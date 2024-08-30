@@ -10,13 +10,13 @@ const MAX_NAME_LEN: usize = 100;
 
 /// The POST body for creating tasks
 #[derive(Debug, Deserialize, ToSchema)]
-pub struct CreateTaskBody {
+pub struct CreateTaskRequest {
     pub name: String,
     pub story_id: Uuid,
     pub status: Option<String>,
 }
 
-impl CreateTaskBody {
+impl CreateTaskRequest {
     /// Validate a task create request.
     pub fn validate(&self) -> Result<(Uuid, String, Status)> {
         // Collects error messages
@@ -46,12 +46,12 @@ impl CreateTaskBody {
 
 /// The PATCH body for updating tasks
 #[derive(Debug, Deserialize, ToSchema)]
-pub struct PatchTaskBody {
+pub struct UpdateTaskRequest {
     pub name: Option<String>,
     pub status: Option<String>,
 }
 
-impl PatchTaskBody {
+impl UpdateTaskRequest {
     /// Validate a task update request.
     pub fn validate(&self) -> Result<(Option<String>, Option<Status>)> {
         // Make sure at least one field is provided
