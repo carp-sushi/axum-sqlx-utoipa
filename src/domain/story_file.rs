@@ -1,3 +1,4 @@
+use super::StorageId;
 use chrono::{DateTime, Utc};
 use serde::Serialize;
 use utoipa::ToSchema;
@@ -8,7 +9,7 @@ pub struct StoryFile {
     pub id: Uuid,
     pub story_id: Uuid,
     #[serde(skip_serializing)]
-    pub storage_id: Uuid,
+    pub storage_id: StorageId,
     pub name: String,
     pub size: i64,
     pub content_type: String,

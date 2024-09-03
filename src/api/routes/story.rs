@@ -12,7 +12,6 @@ use axum::{
     routing::get,
     Json, Router,
 };
-use futures_util::TryFutureExt;
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -49,7 +48,7 @@ async fn get_story(
     Path(story_id): Path<Uuid>,
     State(ctx): State<Arc<Ctx>>,
 ) -> Result<impl IntoResponse> {
-    let story = ctx.repo.fetch_story(story_id).await?;
+    let story = ctx.story_keeper.fetch(story_id).await?;
     Ok(Json(story))
 }
 
@@ -67,7 +66,7 @@ async fn get_story(
         ),
         ("page_token" = Option<String>,
             Query,
-            description = "The next page cursor (next_page from response)",
+            description = "The page cursor (next_page from response)",
             nullable
         )
     ),
@@ -83,7 +82,7 @@ async fn get_stories(
     tracing::debug!("params: {:?}", params);
     let q = params.unwrap_or_default();
     let cursor = PageToken::decode_or(&q.page_token, 1)?;
-    let (next_cursor, stories) = ctx.repo.list_stories(cursor, q.page_size()).await?;
+    let (next_cursor, stories) = ctx.story_keeper.list(cursor, q.page_size()).await?;
     let resp = Stories::new(PageToken::encode(next_cursor), stories);
     Ok(Json(resp))
 }
@@ -97,7 +96,8 @@ async fn get_stories(
         ("status" = Option<String>, Query, description = "The task status filter", nullable)
     ),
     responses(
-        (status = 200, description = "The tasks for the story", body = [Task])
+        (status = 200, description = "The tasks for the story", body = [Task]),
+        (status = 404, description = "The parent story was not found", body = Errors)
     ),
     tag = "Story"
 )]
@@ -108,10 +108,7 @@ async fn get_tasks(
 ) -> Result<impl IntoResponse> {
     tracing::debug!("params: {:?}", params);
     let q = params.unwrap_or_default();
-    let mut tasks = ctx.repo.list_tasks(story_id).await?;
-    if let Some(status) = q.status() {
-        tasks.retain(|t| t.status == status);
-    }
+    let tasks = ctx.task_keeper.list(story_id, q.status()).await?;
     Ok(Json(tasks))
 }
 
@@ -131,7 +128,7 @@ async fn create_story(
     Json(req): Json<StoryRequest>,
 ) -> Result<impl IntoResponse> {
     let name = req.validate()?;
-    let story = ctx.repo.create_story(name).await?;
+    let story = ctx.story_keeper.create(name).await?;
     Ok((StatusCode::CREATED, Json(story)))
 }
 
@@ -144,7 +141,7 @@ async fn create_story(
     responses(
         (status = 200, description = "The story was updated", body = Story),
         (status = 400, description = "The request body was invalid", body = Errors),
-        (status = 404, description = "The story not not found", body = Errors)
+        (status = 404, description = "The story was not found", body = Errors)
     ),
     tag = "Story"
 )]
@@ -154,11 +151,7 @@ async fn update_story(
     Json(req): Json<StoryRequest>,
 ) -> Result<impl IntoResponse> {
     let name = req.validate()?;
-    let story = ctx
-        .repo
-        .fetch_story(story_id)
-        .and_then(|_| ctx.repo.update_story(story_id, name))
-        .await?;
+    let story = ctx.story_keeper.update(story_id, name).await?;
     Ok(Json(story))
 }
 
@@ -174,12 +167,7 @@ async fn update_story(
     tag = "Story"
 )]
 async fn delete_story(Path(story_id): Path<Uuid>, State(ctx): State<Arc<Ctx>>) -> StatusCode {
-    let result = ctx
-        .repo
-        .fetch_story(story_id)
-        .and_then(|_| ctx.repo.delete_story(story_id))
-        .await;
-    if let Err(err) = result {
+    if let Err(err) = ctx.story_keeper.delete(story_id).await {
         return StatusCode::from(err);
     }
     StatusCode::NO_CONTENT

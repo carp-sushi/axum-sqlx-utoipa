@@ -6,57 +6,57 @@ use sqlx::migrate::Migrator;
 use sqlx_todos::{
     api::{Api, Ctx},
     config::Config,
-    driver::storage::{fs::FileStorage, Storage},
-    repo::Repo,
+    container::Container,
+    domain::StorageId,
+    driver::storage::Storage,
+    keeper::{FileKeeper, StoryKeeper, TaskKeeper},
 };
 use std::{error::Error, sync::Arc};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
-use uuid::Uuid;
 
 // Embed migrations into the server binary.
 pub static MIGRATOR: Migrator = sqlx::migrate!();
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    // Load env vars
+    // Load env vars and tracing subscriber
     dotenv().ok();
-
-    // Init tracing
     tracing_subscriber::registry()
         .with(tracing_subscriber::EnvFilter::from_default_env())
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    // Load config
+    // Load config and dependency container
     let config = Arc::new(Config::default());
-    tracing::debug!("Loaded config = {:?}", config);
+    let container = Container::new(config.clone());
 
-    // Create pg connection pool
-    let pool = config
-        .db_pool_opts()
-        .connect(config.db_connection_string().as_ref())
-        .await?;
-
+    // Load connection pool and run schema migrations
+    let pool = container.pg_pool().await;
     tracing::debug!("Running migrations");
     MIGRATOR.run(&pool).await?;
 
-    // Set up repo
-    let pool = Arc::new(pool);
-    let repo = Arc::new(Repo::new(pool));
-
     // Set up storage
-    assert!(config.storage_type == "file"); // TODO: support gcs, s3, etc...
-    let dir = config.storage_bucket.clone();
-    let storage = Arc::new(Box::new(FileStorage::new(dir)) as Box<dyn Storage<Uuid>>);
+    let storage = Box::new(container.storage()) as Box<dyn Storage<StorageId>>;
+
+    // Set up persistence APIs
+    let repo = Arc::new(container.repo(pool));
+    let story_keeper = Box::new(container.story_keeper(repo.clone())) as Box<dyn StoryKeeper>;
+    let task_keeper = Box::new(container.task_keeper(repo.clone())) as Box<dyn TaskKeeper>;
+    let file_keeper = Box::new(container.file_keeper(repo.clone())) as Box<dyn FileKeeper>;
 
     // Set up API
-    let ctx = Ctx::new(repo, storage);
-    let api = Api::new(Arc::new(ctx));
+    let ctx = Ctx::new(
+        Arc::new(storage),
+        Arc::new(story_keeper),
+        Arc::new(task_keeper),
+        Arc::new(file_keeper),
+    );
+    let service = Api::new(Arc::new(ctx)).mk_service();
 
     // Start server
     tracing::info!("Server listening on {}", config.listen_addr);
     let listener = config.tcp_listener().await;
-    axum::serve(listener, api.routes()).await?;
+    axum::serve(listener, service).await?;
 
     Ok(())
 }

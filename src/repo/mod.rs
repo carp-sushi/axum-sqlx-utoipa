@@ -26,9 +26,7 @@ impl Repo {
 
 impl From<sqlx::Error> for Error {
     fn from(err: sqlx::Error) -> Self {
-        Error::Internal {
-            message: err.to_string(),
-        }
+        Error::internal(err.to_string())
     }
 }
 

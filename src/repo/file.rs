@@ -1,5 +1,8 @@
 use super::{sql, Repo};
-use crate::{domain::StoryFile, Error, Result};
+use crate::{
+    domain::{StorageId, StoryFile},
+    Error, Result,
+};
 use futures_util::TryStreamExt;
 use sqlx::{postgres::PgRow, FromRow, Row};
 use stripmargin::StripMargin;
@@ -14,7 +17,7 @@ impl FromRow<'_, PgRow> for StoryFile {
         Ok(Self {
             id: row.try_get("id")?,
             story_id: row.try_get("story_id")?,
-            storage_id: row.try_get("storage_id")?,
+            storage_id: StorageId(row.try_get("storage_id")?),
             name: row.try_get("name")?,
             size: row.try_get("size")?,
             content_type: row.try_get("content_type")?,
@@ -29,7 +32,7 @@ impl Repo {
     pub async fn create_file(
         &self,
         story_id: Uuid,
-        storage_id: Uuid,
+        StorageId(storage_id): StorageId,
         name: String,
         size: i64,
         content_type: String,
@@ -117,14 +120,14 @@ mod tests {
         assert_eq!(name, story.name);
 
         // Test file metadata
-        let storage_id = Uuid::new_v4();
+        let storage_id = StorageId::random();
         let name = "Sequence Diagrams.png".to_string();
         let size: i64 = 10420;
         let content_type = "image/png".to_string();
 
         // Add file
         let inserted = repo
-            .create_file(story.id, storage_id, name, size, content_type)
+            .create_file(story.id, storage_id.clone(), name, size, content_type)
             .await
             .unwrap();
 

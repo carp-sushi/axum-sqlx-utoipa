@@ -16,13 +16,13 @@ pub struct Api {
 }
 
 impl Api {
-    /// Create a new api
+    /// Create a new api with context pointer state.
     pub fn new(ctx: Arc<Ctx>) -> Self {
         Self { ctx }
     }
 
-    /// Define API routes, mapping paths to handlers.
-    pub fn routes(self) -> Router {
+    /// Create an API service by merging internal routes with context pointer state.
+    pub fn mk_service(self) -> Router {
         tracer::wrap(
             Router::new()
                 .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", docs()))
@@ -35,7 +35,7 @@ impl Api {
     }
 }
 
-/// Combine OpenApi docs for internal routes.
+/// Combined OpenApi docs of internal routes.
 pub fn docs() -> OpenApiDocs {
     let mut api = story::ApiDoc::openapi();
     api.merge(file::ApiDoc::openapi());

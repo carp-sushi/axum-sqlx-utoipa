@@ -33,7 +33,7 @@
           {
             "name": "page_token",
             "in": "query",
-            "description": "The next page cursor (next_page from response)",
+            "description": "The page cursor (next_page from response)",
             "required": false,
             "schema": {
               "type": "string",
@@ -213,7 +213,7 @@
             }
           },
           "404": {
-            "description": "The story not not found",
+            "description": "The story was not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -500,6 +500,16 @@
                   "items": {
                     "$ref": "#/components/schemas/Task"
                   }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The parent story was not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Errors"
                 }
               }
             }

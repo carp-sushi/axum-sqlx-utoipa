@@ -12,7 +12,6 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
-use futures_util::TryFutureExt;
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -45,7 +44,7 @@ pub fn routes() -> Router<Arc<Ctx>> {
     tag = "Task"
 )]
 async fn get_task(Path(task_id): Path<Uuid>, State(ctx): State<Arc<Ctx>>) -> Result<Json<Task>> {
-    let task = ctx.repo.fetch_task(task_id).await?;
+    let task = ctx.task_keeper.fetch(task_id).await?;
     Ok(Json(task))
 }
 
@@ -65,11 +64,7 @@ async fn create_task(
     Json(req): Json<CreateTaskRequest>,
 ) -> Result<impl IntoResponse> {
     let (story_id, name, status) = req.validate()?;
-    let task = ctx
-        .repo
-        .fetch_story(story_id)
-        .and_then(|_| ctx.repo.create_task(story_id, name, status))
-        .await?;
+    let task = ctx.task_keeper.create(story_id, name, status).await?;
     Ok((StatusCode::CREATED, Json(task)))
 }
 
@@ -91,16 +86,8 @@ async fn update_task(
     State(ctx): State<Arc<Ctx>>,
     Json(req): Json<UpdateTaskRequest>,
 ) -> Result<Json<Task>> {
-    let (name_opt, status_opt) = req.validate()?;
-    let task = ctx
-        .repo
-        .fetch_task(task_id)
-        .and_then(|task| {
-            let name = name_opt.unwrap_or(task.name);
-            let status = status_opt.unwrap_or(task.status);
-            ctx.repo.update_task(task_id, name, status)
-        })
-        .await?;
+    let (name, status) = req.validate()?;
+    let task = ctx.task_keeper.update(task_id, name, status).await?;
     Ok(Json(task))
 }
 
@@ -116,12 +103,7 @@ async fn update_task(
     tag = "Task"
 )]
 async fn delete_task(Path(task_id): Path<Uuid>, State(ctx): State<Arc<Ctx>>) -> StatusCode {
-    let result = ctx
-        .repo
-        .fetch_task(task_id)
-        .and_then(|_| ctx.repo.delete_task(task_id))
-        .await;
-    if let Err(err) = result {
+    if let Err(err) = ctx.task_keeper.delete(task_id).await {
         return StatusCode::from(err);
     }
     StatusCode::NO_CONTENT
