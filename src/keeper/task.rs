@@ -52,7 +52,7 @@ impl TaskKeeper for TaskKeeperPostgres {
             let _ = self.repo.fetch_story(story_id).await?;
         }
         if let Some(status) = status {
-            tasks.retain(|t| t.status == status);
+            tasks.retain(|t| t.status == status.to_string());
         }
         Ok(tasks)
     }
@@ -70,8 +70,11 @@ impl TaskKeeper for TaskKeeperPostgres {
         self.repo
             .fetch_task(id)
             .and_then(|t| {
-                self.repo
-                    .update_task(t.id, name.unwrap_or(t.name), status.unwrap_or(t.status))
+                self.repo.update_task(
+                    t.id,
+                    name.unwrap_or(t.clone().name),
+                    status.unwrap_or(t.status()),
+                )
             })
             .await
     }

@@ -1,38 +1,16 @@
-use super::{sql, Repo};
-use crate::{
-    domain::{StorageId, StoryFile},
-    Error, Result,
-};
-use futures_util::TryStreamExt;
-use sqlx::{postgres::PgRow, FromRow, Row};
-use stripmargin::StripMargin;
+use super::Repo;
+use crate::{domain::StoryFile, Error, Result};
 use uuid::Uuid;
 
 // Defines a reasonable limit on the max files per story.
 const MAX_FILES: i16 = 100;
-
-/// Map sqlx rows to file metadata domain objects.
-impl FromRow<'_, PgRow> for StoryFile {
-    fn from_row(row: &PgRow) -> std::result::Result<Self, sqlx::Error> {
-        Ok(Self {
-            id: row.try_get("id")?,
-            story_id: row.try_get("story_id")?,
-            storage_id: StorageId(row.try_get("storage_id")?),
-            name: row.try_get("name")?,
-            size: row.try_get("size")?,
-            content_type: row.try_get("content_type")?,
-            created_at: row.try_get("created_at")?,
-            updated_at: row.try_get("updated_at")?,
-        })
-    }
-}
 
 impl Repo {
     /// Insert a new file metadata row.
     pub async fn create_file(
         &self,
         story_id: Uuid,
-        StorageId(storage_id): StorageId,
+        storage_id: Uuid,
         name: String,
         size: i64,
         content_type: String,
@@ -40,50 +18,45 @@ impl Repo {
         if size <= 0 {
             return Err(Error::invalid_args("file size must be > 0"));
         }
-        let query = sql::file::CREATE.strip_margin();
-
-        let story_file = sqlx::query_as(&query)
-            .bind(story_id)
-            .bind(storage_id)
-            .bind(name)
-            .bind(size)
-            .bind(content_type)
-            .fetch_one(self.db_ref())
-            .await?;
-
+        let query = sqlx::query_as!(
+            StoryFile,
+            r#"INSERT INTO story_files (story_id, storage_id, name, size, content_type)
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING id, story_id, storage_id, name, size, content_type, created_at, updated_at"#,
+            story_id,
+            storage_id,
+            name,
+            size,
+            content_type,
+        );
+        let story_file = query.fetch_one(self.db_ref()).await?;
         Ok(story_file)
     }
 
     /// List all files for a story.
     pub async fn list_files(&self, story_id: Uuid) -> Result<Vec<StoryFile>> {
-        let query = sql::file::LIST.strip_margin();
-
-        let mut result_set = sqlx::query(&query)
-            .bind(story_id)
-            .bind(MAX_FILES)
-            .fetch(self.db_ref());
-
-        let mut story_files = Vec::with_capacity(MAX_FILES as usize);
-
-        while let Some(row) = result_set.try_next().await? {
-            let story_file = StoryFile::from_row(&row)?;
-            story_files.push(story_file);
-        }
-
+        let query = sqlx::query_as!(
+            StoryFile,
+            r#"SELECT id, story_id, storage_id, name, size, content_type, created_at, updated_at
+            FROM story_files WHERE story_id = $1
+            ORDER BY created_at LIMIT $2"#,
+            story_id,
+            MAX_FILES as i64,
+        );
+        let story_files = query.fetch_all(self.db_ref()).await?;
         Ok(story_files)
     }
 
     /// Select a file by id and story id
     pub async fn fetch_file(&self, story_id: Uuid, file_id: Uuid) -> Result<StoryFile> {
-        let query = sql::file::FETCH.strip_margin();
-
-        let file_opt = sqlx::query_as(&query)
-            .bind(file_id)
-            .bind(story_id)
-            .fetch_optional(self.db_ref())
-            .await?;
-
-        match file_opt {
+        let query = sqlx::query_as!(
+            StoryFile,
+            r#"SELECT id, story_id, storage_id, name, size, content_type, created_at, updated_at
+            FROM story_files WHERE id = $1 AND story_id = $2"#,
+            file_id,
+            story_id,
+        );
+        match query.fetch_optional(self.db_ref()).await? {
             Some(file) => Ok(file),
             None => Err(Error::not_found(format!("file not found: {}", file_id))),
         }
@@ -91,8 +64,9 @@ impl Repo {
 
     /// Delete a file
     pub async fn delete_file(&self, id: Uuid) -> Result<u64> {
-        let query = sql::file::DELETE.strip_margin();
-        let result = sqlx::query(&query).bind(id).execute(self.db_ref()).await?;
+        let result = sqlx::query!("DELETE FROM story_files WHERE id = $1", id)
+            .execute(self.db_ref())
+            .await?;
         Ok(result.rows_affected())
     }
 }
@@ -120,7 +94,7 @@ mod tests {
         assert_eq!(name, story.name);
 
         // Test file metadata
-        let storage_id = StorageId::random();
+        let storage_id = Uuid::new_v4();
         let name = "Sequence Diagrams.png".to_string();
         let size: i64 = 10420;
         let content_type = "image/png".to_string();

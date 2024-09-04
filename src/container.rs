@@ -1,6 +1,5 @@
 use crate::{
     config::Config,
-    domain::StorageId,
     driver::storage::{fs::FileStorage, Storage},
     keeper::{
         FileKeeper, FileKeeperPostgres, StoryKeeper, StoryKeeperPostgres, TaskKeeper,
@@ -10,6 +9,7 @@ use crate::{
 };
 use sqlx::{Pool, Postgres};
 use std::sync::Arc;
+use uuid::Uuid;
 
 /// A simple dependency container.
 pub struct Container {
@@ -23,7 +23,7 @@ impl Container {
     }
 
     /// Load storage system.
-    pub fn storage(&self) -> impl Storage<StorageId> {
+    pub fn storage(&self) -> impl Storage<Uuid> {
         assert!(self.config.storage_type == "file"); // TODO: support gcs, s3, etc...
         FileStorage::new(self.config.storage_bucket.clone())
             .validate()
@@ -32,7 +32,7 @@ impl Container {
 
     /// Load database connection pool.
     pub async fn pg_pool(&self) -> Pool<Postgres> {
-        let url = self.config.db_connection_string();
+        let url = self.config.db_url.clone();
         self.config
             .db_pool_opts()
             .connect(url.as_ref())

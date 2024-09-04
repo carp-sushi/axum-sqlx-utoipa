@@ -1,15 +1,15 @@
 use crate::{
-    domain::StorageId,
     driver::storage::Storage,
     keeper::{FileKeeper, StoryKeeper, TaskKeeper},
 };
 use std::sync::Arc;
+use uuid::Uuid;
 
 /// Context contains pointers to keepers and drivers for use in API routes.
 #[derive(Clone)]
 pub struct Ctx {
     /// Binary object storage
-    pub storage: Arc<Box<dyn Storage<StorageId>>>,
+    pub storage: Arc<Box<dyn Storage<Uuid>>>,
 
     /// Story persistence API
     pub story_keeper: Arc<Box<dyn StoryKeeper>>,
@@ -24,7 +24,7 @@ pub struct Ctx {
 impl Ctx {
     /// Create a new API context
     pub fn new(
-        storage: Arc<Box<dyn Storage<StorageId>>>,
+        storage: Arc<Box<dyn Storage<Uuid>>>,
         story_keeper: Arc<Box<dyn StoryKeeper>>,
         task_keeper: Arc<Box<dyn TaskKeeper>>,
         file_keeper: Arc<Box<dyn FileKeeper>>,

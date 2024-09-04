@@ -34,11 +34,10 @@ sqlx = { version = "0.8", features = [
     "uuid",
     "chrono",
 ] }
-stripmargin = "0.1.1"
 strum = "0.26"
 strum_macros = "0.26"
 thiserror = "1"
-tokio = { version = "1.33", features = ["macros", "rt-multi-thread"] }
+tokio = { version = "1.40", features = ["macros", "rt-multi-thread"] }
 tower-http = { version = "0.5", features = ["limit", "trace"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
@@ -47,8 +46,8 @@ utoipa-swagger-ui = { version = "7.1", features = ["axum"] }
 uuid = { version = "1", features = ["serde", "v4"] }
 
 [dev-dependencies]
-testcontainers = "0.21"
-testcontainers-modules = { version = "0.9", features = ["postgres"] }
+testcontainers = "0.22"
+testcontainers-modules = { version = "0.10", features = ["postgres"] }
 
 [profile.release]
 codegen-units = 1

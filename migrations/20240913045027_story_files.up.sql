@@ -3,8 +3,8 @@ create table story_files (
     story_id uuid references stories(id) not null,
     storage_id uuid not null,
     name text not null,
-    size bigint,
-    content_type text,
+    size bigint not null default 0,
+    content_type text not null,
     created_at timestamptz not null default now(),
     updated_at timestamptz not null default now()
 );

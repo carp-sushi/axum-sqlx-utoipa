@@ -3,7 +3,6 @@ use sqlx::postgres::PgPool;
 use std::sync::Arc;
 
 mod file;
-mod sql;
 mod story;
 mod task;
 

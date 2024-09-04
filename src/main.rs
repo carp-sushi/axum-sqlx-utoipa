@@ -7,12 +7,12 @@ use sqlx_todos::{
     api::{Api, Ctx},
     config::Config,
     container::Container,
-    domain::StorageId,
     driver::storage::Storage,
     keeper::{FileKeeper, StoryKeeper, TaskKeeper},
 };
 use std::{error::Error, sync::Arc};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use uuid::Uuid;
 
 // Embed migrations into the server binary.
 pub static MIGRATOR: Migrator = sqlx::migrate!();
@@ -36,7 +36,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     MIGRATOR.run(&pool).await?;
 
     // Set up storage
-    let storage = Box::new(container.storage()) as Box<dyn Storage<StorageId>>;
+    let storage = Box::new(container.storage()) as Box<dyn Storage<Uuid>>;
 
     // Set up persistence APIs
     let repo = Arc::new(container.repo(pool));

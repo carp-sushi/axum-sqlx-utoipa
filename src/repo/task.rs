@@ -1,53 +1,23 @@
-use super::{sql, Repo};
+use super::Repo;
 use crate::{
     domain::{Status, Task},
     Error, Result,
 };
-use futures_util::TryStreamExt;
-use sqlx::{postgres::PgRow, FromRow, Row};
-use std::str::FromStr;
-use stripmargin::StripMargin;
 use uuid::Uuid;
 
 // Put some reasonable upper limit when querying tasks for a story.
-const MAX_TASKS: i16 = 500;
-
-/// Map sqlx rows to task domain objects.
-impl FromRow<'_, PgRow> for Task {
-    fn from_row(row: &PgRow) -> std::result::Result<Self, sqlx::Error> {
-        let id = row.try_get("id")?;
-        let story_id = row.try_get("story_id")?;
-        let name = row.try_get("name")?;
-        let status: String = row.try_get("status")?;
-        let created_at = row.try_get("created_at")?;
-        let updated_at = row.try_get("updated_at")?;
-
-        // Manually convert to enum type
-        let status = Status::from_str(&status).map_err(|err| sqlx::Error::Decode(Box::new(err)))?;
-
-        Ok(Self {
-            id,
-            story_id,
-            name,
-            status,
-            created_at,
-            updated_at,
-        })
-    }
-}
+const MAX_TASKS: i64 = 100;
 
 // Extend repo with queries related to tasks.
 impl Repo {
     /// Get a task by id
     pub async fn fetch_task(&self, id: Uuid) -> Result<Task> {
-        let query = sql::task::FETCH.strip_margin();
-
-        let task_opt = sqlx::query_as(&query)
-            .bind(id)
-            .fetch_optional(self.db_ref())
-            .await?;
-
-        match task_opt {
+        let query = sqlx::query_as!(
+            Task,
+            "SELECT id, story_id, name, status, created_at, updated_at FROM tasks WHERE id = $1",
+            id,
+        );
+        match query.fetch_optional(self.db_ref()).await? {
             Some(task) => Ok(task),
             None => Err(Error::not_found(format!("task not found: {id}"))),
         }
@@ -55,55 +25,50 @@ impl Repo {
 
     /// Select tasks for a story
     pub async fn list_tasks(&self, story_id: Uuid) -> Result<Vec<Task>> {
-        let query = sql::task::LIST.strip_margin();
-
-        let mut result_set = sqlx::query(&query)
-            .bind(story_id)
-            .bind(MAX_TASKS)
-            .fetch(self.db_ref());
-
-        let mut tasks = Vec::with_capacity(MAX_TASKS as usize);
-
-        while let Some(row) = result_set.try_next().await? {
-            let task = Task::from_row(&row)?;
-            tasks.push(task);
-        }
-
+        let query = sqlx::query_as!(
+            Task,
+            r#"SELECT id, story_id, name, status, created_at, updated_at FROM tasks
+            WHERE story_id = $1 ORDER BY created_at LIMIT $2"#,
+            story_id,
+            MAX_TASKS,
+        );
+        let tasks = query.fetch_all(self.db_ref()).await?;
         Ok(tasks)
     }
 
     /// Insert a new task
     pub async fn create_task(&self, story_id: Uuid, name: String, status: Status) -> Result<Task> {
-        let query = sql::task::CREATE.strip_margin();
-
-        let task = sqlx::query_as(&query)
-            .bind(story_id)
-            .bind(name)
-            .bind(status.to_string())
-            .fetch_one(self.db_ref())
-            .await?;
-
+        let query = sqlx::query_as!(
+            Task,
+            r#"INSERT INTO tasks (story_id, name, status) VALUES ($1, $2, $3)
+            RETURNING id, story_id, name, status, created_at, updated_at"#,
+            story_id,
+            name,
+            status.to_string(),
+        );
+        let task = query.fetch_one(self.db_ref()).await?;
         Ok(task)
     }
 
     /// Update task name and status.
     pub async fn update_task(&self, id: Uuid, name: String, status: Status) -> Result<Task> {
-        let query = sql::task::UPDATE.strip_margin();
-
-        let task = sqlx::query_as(&query)
-            .bind(name)
-            .bind(status.to_string())
-            .bind(id)
-            .fetch_one(self.db_ref())
-            .await?;
-
+        let query = sqlx::query_as!(
+            Task,
+            r#"UPDATE tasks SET name = $1, status = $2, updated_at = now() WHERE id = $3
+            RETURNING id, story_id, name, status, created_at, updated_at"#,
+            name,
+            status.to_string(),
+            id,
+        );
+        let task = query.fetch_one(self.db_ref()).await?;
         Ok(task)
     }
 
     /// Delete a task.
     pub async fn delete_task(&self, id: Uuid) -> Result<u64> {
-        let query = sql::task::DELETE.strip_margin();
-        let result = sqlx::query(&query).bind(id).execute(self.db_ref()).await?;
+        let result = sqlx::query!("DELETE FROM tasks WHERE id = $1", id)
+            .execute(self.db_ref())
+            .await?;
         Ok(result.rows_affected())
     }
 }
@@ -138,7 +103,7 @@ mod tests {
             .create_task(story_id.clone(), "Suttree".to_string(), status)
             .await
             .unwrap();
-        assert_eq!(task.status, Status::Incomplete);
+        assert_eq!(task.status, Status::Incomplete.to_string());
 
         // Assert task exists
         assert!(repo.fetch_task(task.id).await.is_ok());
@@ -150,7 +115,7 @@ mod tests {
 
         // Fetch task and assert status was updated
         let task = repo.fetch_task(task.id).await.unwrap();
-        assert_eq!(task.status, Status::Complete);
+        assert_eq!(task.status, Status::Complete.to_string());
 
         // Query tasks for story.
         let tasks = repo.list_tasks(story_id.clone()).await.unwrap();

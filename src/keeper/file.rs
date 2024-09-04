@@ -1,8 +1,4 @@
-use crate::{
-    domain::{StorageId, StoryFile},
-    repo::Repo,
-    Result,
-};
+use crate::{domain::StoryFile, repo::Repo, Result};
 use futures_util::TryFutureExt;
 use std::sync::Arc;
 use uuid::Uuid;
@@ -20,7 +16,7 @@ pub trait FileKeeper: Send + Sync {
     async fn create(
         &self,
         story_id: Uuid,
-        storage_id: StorageId,
+        storage_id: Uuid,
         name: String,
         size: i64,
         content_type: String,
@@ -62,7 +58,7 @@ impl FileKeeper for FileKeeperPostgres {
     async fn create(
         &self,
         story_id: Uuid,
-        storage_id: StorageId,
+        storage_id: Uuid,
         name: String,
         size: i64,
         content_type: String,

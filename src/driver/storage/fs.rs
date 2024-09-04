@@ -1,10 +1,11 @@
 use super::Storage;
-use crate::{domain::StorageId, Error, Result};
+use crate::{Error, Result};
 use std::{
-    fs::File,
+    fs::{self, File},
     io::{Read, Write},
     path::{Path, MAIN_SEPARATOR_STR},
 };
+use uuid::Uuid;
 
 /// Store binary objects in local files.
 pub struct FileStorage {
@@ -20,21 +21,21 @@ impl FileStorage {
     /// Verify that the root dir exists.
     pub fn validate(self) -> Result<Self> {
         if !Path::new(&self.root_dir).exists() {
-            return Err(Error::internal(format!("{} does not exist", self.root_dir)));
+            return Err(Error::internal(format!("{} doesn't exist", self.root_dir)));
         }
         Ok(self)
     }
 
     /// Build file-system storage path for a key.
-    fn path(&self, StorageId(file_name): StorageId) -> String {
+    fn path(&self, file_name: Uuid) -> String {
         format!("{}{}{}", self.root_dir, MAIN_SEPARATOR_STR, file_name)
     }
 }
 
 #[async_trait::async_trait]
-impl Storage<StorageId> for FileStorage {
+impl Storage<Uuid> for FileStorage {
     /// Read bytes from file
-    async fn read(&self, key: StorageId) -> Result<Vec<u8>> {
+    async fn read(&self, key: Uuid) -> Result<Vec<u8>> {
         let mut f = File::open(self.path(key))?;
         let mut bytes = Vec::new();
         f.read_to_end(&mut bytes)?;
@@ -42,19 +43,19 @@ impl Storage<StorageId> for FileStorage {
     }
 
     /// Write bytes to file
-    async fn write(&self, bytes: &[u8]) -> Result<StorageId> {
+    async fn write(&self, bytes: &[u8]) -> Result<Uuid> {
         if bytes.is_empty() {
             return Err(Error::invalid_args("empty file"));
         }
-        let key = StorageId::random();
-        let mut file = File::create(self.path(key.clone()))?;
+        let key = Uuid::new_v4();
+        let mut file = File::create(self.path(key))?;
         file.write_all(bytes)?;
         Ok(key)
     }
 
     /// Delete bytes for a key
-    async fn delete(&self, key: StorageId) -> Result<()> {
-        std::fs::remove_file(self.path(key))?;
+    async fn delete(&self, key: Uuid) -> Result<()> {
+        fs::remove_file(self.path(key))?;
         Ok(())
     }
 }

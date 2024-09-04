@@ -11,11 +11,7 @@ mod tcp;
 pub struct Config {
     pub listen_addr: String,
     pub db_max_connections: u32,
-    pub db_host: String,
-    pub db_port: u16,
-    pub db_user: String,
-    pub db_password: String,
-    pub db_database: String,
+    pub db_url: String,
     pub db_schema: String,
     pub storage_type: String,
     pub storage_bucket: String,
@@ -37,18 +33,11 @@ impl Config {
 
         // database settings
         let mut db_max_connections = num_cpus::get() as u32;
-        if let Ok(s) = env::var("DB_MAX_CONNECTIONS") {
+        if let Ok(s) = env::var("DATABASE_MAX_CONNECTIONS") {
             db_max_connections = s.parse().expect("DB_MAX_CONNECTIONS could not be parsed")
         }
-        let db_host = env::var("DB_HOST").expect("DB_HOST not set");
-        let db_port = env::var("DB_PORT")
-            .unwrap_or("5432".to_owned())
-            .parse()
-            .expect("DB_PORT could not be parsed");
-        let db_user = env::var("DB_USER").expect("DB_USER not set");
-        let db_password = env::var("DB_PASS").expect("DB_PASS not set");
-        let db_database = env::var("DB_NAME").expect("DB_NAME not set");
-        let db_schema = env::var("DB_SCHEMA").unwrap_or("public".to_owned());
+        let db_url = env::var("DATABASE_URL").expect("DB_HOST not set");
+        let db_schema = env::var("DATABASE_SCHEMA").unwrap_or("public".to_owned());
         let storage_type = env::var("STORAGE_TYPE").expect("STORAGE_TYPE not set");
         let storage_bucket = env::var("STORAGE_BUCKET").expect("STORAGE_BUCKET not set");
 
@@ -56,11 +45,7 @@ impl Config {
         Self {
             listen_addr,
             db_max_connections,
-            db_host,
-            db_port,
-            db_user,
-            db_password,
-            db_database,
+            db_url,
             db_schema,
             storage_type,
             storage_bucket,
