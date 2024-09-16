@@ -1,7 +1,4 @@
-use crate::{
-    driver::storage::Storage,
-    keeper::{FileKeeper, StoryKeeper, TaskKeeper},
-};
+use crate::{driver::storage::Storage, repo::Repo};
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -11,29 +8,13 @@ pub struct Ctx {
     /// Binary object storage
     pub storage: Arc<Box<dyn Storage<Uuid>>>,
 
-    /// Story persistence API
-    pub story_keeper: Arc<Box<dyn StoryKeeper>>,
-
-    /// Task persistence API
-    pub task_keeper: Arc<Box<dyn TaskKeeper>>,
-
-    /// File metadata persistence API
-    pub file_keeper: Arc<Box<dyn FileKeeper>>,
+    /// Persistence API
+    pub repo: Arc<Repo>,
 }
 
 impl Ctx {
     /// Create a new API context
-    pub fn new(
-        storage: Arc<Box<dyn Storage<Uuid>>>,
-        story_keeper: Arc<Box<dyn StoryKeeper>>,
-        task_keeper: Arc<Box<dyn TaskKeeper>>,
-        file_keeper: Arc<Box<dyn FileKeeper>>,
-    ) -> Self {
-        Self {
-            storage,
-            story_keeper,
-            task_keeper,
-            file_keeper,
-        }
+    pub fn new(storage: Arc<Box<dyn Storage<Uuid>>>, repo: Arc<Repo>) -> Self {
+        Self { storage, repo }
     }
 }

@@ -6,9 +6,8 @@ use sqlx::migrate::Migrator;
 use sqlx_todos::{
     api::{Api, Ctx},
     config::Config,
-    container::Container,
-    driver::storage::Storage,
-    keeper::{FileKeeper, StoryKeeper, TaskKeeper},
+    driver::storage::{fs::FileStorage, Storage},
+    repo::Repo,
 };
 use std::{error::Error, sync::Arc};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
@@ -26,31 +25,22 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    // Load config and dependency container
+    // Load config
     let config = Arc::new(Config::default());
-    let container = Container::new(config.clone());
 
     // Load connection pool and run schema migrations
-    let pool = container.pg_pool().await;
+    let pool = config.db_pool_opts().connect(&config.db_url).await?;
     tracing::debug!("Running migrations");
     MIGRATOR.run(&pool).await?;
 
-    // Set up storage
-    let storage = Box::new(container.storage()) as Box<dyn Storage<Uuid>>;
-
-    // Set up persistence APIs
-    let repo = Arc::new(container.repo(pool));
-    let story_keeper = Box::new(container.story_keeper(repo.clone())) as Box<dyn StoryKeeper>;
-    let task_keeper = Box::new(container.task_keeper(repo.clone())) as Box<dyn TaskKeeper>;
-    let file_keeper = Box::new(container.file_keeper(repo.clone())) as Box<dyn FileKeeper>;
+    // Set up storage and repo
+    assert_eq!(config.storage_type, "file");
+    let root_dir = config.storage_bucket.clone();
+    let storage = Box::new(FileStorage::new(root_dir)) as Box<dyn Storage<Uuid>>;
+    let repo = Arc::new(Repo::new(Arc::new(pool)));
 
     // Set up API
-    let ctx = Ctx::new(
-        Arc::new(storage),
-        Arc::new(story_keeper),
-        Arc::new(task_keeper),
-        Arc::new(file_keeper),
-    );
+    let ctx = Ctx::new(Arc::new(storage), repo);
     let service = Api::new(Arc::new(ctx)).mk_service();
 
     // Start server

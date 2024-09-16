@@ -55,7 +55,7 @@ async fn get_files(
     Path(story_id): Path<Uuid>,
     State(ctx): State<Arc<Ctx>>,
 ) -> Result<impl IntoResponse> {
-    let files = ctx.file_keeper.list(story_id).await?;
+    let files = ctx.repo.list_files(story_id).await?;
     Ok(Json(files))
 }
 
@@ -88,8 +88,8 @@ async fn add_files(
             let storage_id = ctx.storage.write(&bytes).await?;
             let size = bytes.len() as i64;
             let file = ctx
-                .file_keeper
-                .create(story_id, storage_id, file_name, size, content_type)
+                .repo
+                .create_file(story_id, storage_id, file_name, size, content_type)
                 .await?;
             files.push(file);
         }
@@ -118,7 +118,7 @@ async fn download_file(
     Path((story_id, file_id)): Path<(Uuid, Uuid)>,
     State(ctx): State<Arc<Ctx>>,
 ) -> Result<impl IntoResponse> {
-    let file = ctx.file_keeper.fetch(story_id, file_id).await?;
+    let file = ctx.repo.fetch_file(story_id, file_id).await?;
     let contents = ctx.storage.read(file.storage_id).await?;
     let disposition = format!("attachment; filename=\"{}\"", file.name);
     let headers = [
@@ -146,7 +146,7 @@ async fn get_file(
     Path((story_id, file_id)): Path<(Uuid, Uuid)>,
     State(ctx): State<Arc<Ctx>>,
 ) -> Result<impl IntoResponse> {
-    let file = ctx.file_keeper.fetch(story_id, file_id).await?;
+    let file = ctx.repo.fetch_file(story_id, file_id).await?;
     Ok(Json(file))
 }
 
@@ -169,9 +169,10 @@ async fn delete_file(
     State(ctx): State<Arc<Ctx>>,
 ) -> StatusCode {
     let result = ctx
-        .file_keeper
-        .delete(story_id, file_id)
+        .repo
+        .fetch_file(story_id, file_id)
         .and_then(|f| ctx.storage.delete(f.storage_id))
+        .and_then(|_| ctx.repo.delete_file(file_id))
         .await;
     if let Err(err) = result {
         return StatusCode::from(err);

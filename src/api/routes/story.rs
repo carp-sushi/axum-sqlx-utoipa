@@ -48,7 +48,7 @@ async fn get_story(
     Path(story_id): Path<Uuid>,
     State(ctx): State<Arc<Ctx>>,
 ) -> Result<impl IntoResponse> {
-    let story = ctx.story_keeper.fetch(story_id).await?;
+    let story = ctx.repo.fetch_story(story_id).await?;
     Ok(Json(story))
 }
 
@@ -82,7 +82,7 @@ async fn get_stories(
     tracing::debug!("params: {:?}", params);
     let q = params.unwrap_or_default();
     let cursor = PageToken::decode_or(&q.page_token, 1)?;
-    let (next_cursor, stories) = ctx.story_keeper.list(cursor, q.page_size()).await?;
+    let (next_cursor, stories) = ctx.repo.list_stories(cursor, q.page_size()).await?;
     let resp = Stories::new(PageToken::encode(next_cursor), stories);
     Ok(Json(resp))
 }
@@ -108,7 +108,11 @@ async fn get_tasks(
 ) -> Result<impl IntoResponse> {
     tracing::debug!("params: {:?}", params);
     let q = params.unwrap_or_default();
-    let tasks = ctx.task_keeper.list(story_id, q.status()).await?;
+    let mut tasks = ctx.repo.list_tasks(story_id).await?;
+    if let Some(status) = q.status() {
+        let status = status.to_string();
+        tasks.retain(|t| t.status == status);
+    }
     Ok(Json(tasks))
 }
 
@@ -128,7 +132,7 @@ async fn create_story(
     Json(req): Json<StoryRequest>,
 ) -> Result<impl IntoResponse> {
     let name = req.validate()?;
-    let story = ctx.story_keeper.create(name).await?;
+    let story = ctx.repo.create_story(name).await?;
     Ok((StatusCode::CREATED, Json(story)))
 }
 
@@ -151,7 +155,7 @@ async fn update_story(
     Json(req): Json<StoryRequest>,
 ) -> Result<impl IntoResponse> {
     let name = req.validate()?;
-    let story = ctx.story_keeper.update(story_id, name).await?;
+    let story = ctx.repo.update_story(story_id, name).await?;
     Ok(Json(story))
 }
 
@@ -167,7 +171,7 @@ async fn update_story(
     tag = "Story"
 )]
 async fn delete_story(Path(story_id): Path<Uuid>, State(ctx): State<Arc<Ctx>>) -> StatusCode {
-    if let Err(err) = ctx.story_keeper.delete(story_id).await {
+    if let Err(err) = ctx.repo.delete_story(story_id).await {
         return StatusCode::from(err);
     }
     StatusCode::NO_CONTENT
