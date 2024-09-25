@@ -5,7 +5,7 @@ use std::str::FromStr;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, ToSchema)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, ToSchema)]
 pub struct Task {
     pub id: Uuid,
     pub story_id: Uuid,

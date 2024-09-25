@@ -7,6 +7,3 @@ create table stories (
 );
 
 create index stories_seqno_index on stories using btree(seqno);
-
-alter table stories
-    add constraint check_story_name_length check (char_length(name) <= 100);

@@ -63,11 +63,11 @@ impl Repo {
     }
 
     /// Delete a file
-    pub async fn delete_file(&self, id: Uuid) -> Result<u64> {
-        let result = sqlx::query!("DELETE FROM story_files WHERE id = $1", id)
+    pub async fn delete_file(&self, file: StoryFile) -> Result<StoryFile> {
+        sqlx::query!("DELETE FROM story_files WHERE id = $1", file.id)
             .execute(self.db_ref())
             .await?;
-        Ok(result.rows_affected())
+        Ok(file)
     }
 }
 
@@ -115,9 +115,11 @@ mod tests {
         assert!(files.contains(&file));
 
         // Delete file
-        let rows = repo.delete_file(file.id).await.unwrap();
-        assert!(rows > 0);
+        repo.delete_file(file).await.unwrap();
         let files = repo.list_files(story.id).await.unwrap();
         assert!(files.is_empty());
+
+        // Cleanup
+        repo.delete_story(story.id).await.unwrap();
     }
 }

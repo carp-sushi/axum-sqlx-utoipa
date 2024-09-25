@@ -12,6 +12,7 @@ use axum::{
     routing::get,
     Json, Router,
 };
+use futures_util::TryFutureExt;
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -108,7 +109,11 @@ async fn get_tasks(
 ) -> Result<impl IntoResponse> {
     tracing::debug!("params: {:?}", params);
     let q = params.unwrap_or_default();
-    let mut tasks = ctx.repo.list_tasks(story_id).await?;
+    let mut tasks = ctx
+        .repo
+        .fetch_story(story_id)
+        .and_then(|s| ctx.repo.list_tasks(s.id))
+        .await?;
     if let Some(status) = q.status() {
         let status = status.to_string();
         tasks.retain(|t| t.status == status);
@@ -155,7 +160,11 @@ async fn update_story(
     Json(req): Json<StoryRequest>,
 ) -> Result<impl IntoResponse> {
     let name = req.validate()?;
-    let story = ctx.repo.update_story(story_id, name).await?;
+    let story = ctx
+        .repo
+        .fetch_story(story_id)
+        .and_then(|s| ctx.repo.update_story(s.id, name))
+        .await?;
     Ok(Json(story))
 }
 
@@ -171,7 +180,12 @@ async fn update_story(
     tag = "Story"
 )]
 async fn delete_story(Path(story_id): Path<Uuid>, State(ctx): State<Arc<Ctx>>) -> StatusCode {
-    if let Err(err) = ctx.repo.delete_story(story_id).await {
+    let result = ctx
+        .repo
+        .fetch_story(story_id)
+        .and_then(|s| ctx.repo.delete_story(s.id))
+        .await;
+    if let Err(err) = result {
         return StatusCode::from(err);
     }
     StatusCode::NO_CONTENT

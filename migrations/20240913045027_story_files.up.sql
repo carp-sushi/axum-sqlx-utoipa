@@ -10,9 +10,3 @@ create table story_files (
 );
 
 create index story_files_story_id_index ON story_files USING btree(story_id);
-
-alter table story_files
-    add constraint story_files_name_length_check check (char_length(name) <= 100);
-
-alter table story_files
-    add constraint story_files_size_check check (size > 0);

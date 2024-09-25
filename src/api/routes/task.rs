@@ -12,6 +12,7 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
+use futures_util::TryFutureExt;
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -87,10 +88,15 @@ async fn update_task(
     Json(req): Json<UpdateTaskRequest>,
 ) -> Result<Json<Task>> {
     let (name, status) = req.validate()?;
-    let task = ctx.repo.fetch_task(task_id).await?;
-    let name = name.unwrap_or(task.clone().name);
-    let status = status.unwrap_or(task.status());
-    let task = ctx.repo.update_task(task_id, name, status).await?;
+    let task = ctx
+        .repo
+        .fetch_task(task_id)
+        .and_then(|t| {
+            let status = status.unwrap_or(t.status());
+            let name = name.unwrap_or(t.name);
+            ctx.repo.update_task(task_id, name, status)
+        })
+        .await?;
     Ok(Json(task))
 }
 
@@ -106,7 +112,12 @@ async fn update_task(
     tag = "Task"
 )]
 async fn delete_task(Path(task_id): Path<Uuid>, State(ctx): State<Arc<Ctx>>) -> StatusCode {
-    if let Err(err) = ctx.repo.delete_task(task_id).await {
+    let result = ctx
+        .repo
+        .fetch_task(task_id)
+        .and_then(|t| ctx.repo.delete_task(t.id))
+        .await;
+    if let Err(err) = result {
         return StatusCode::from(err);
     }
     StatusCode::NO_CONTENT

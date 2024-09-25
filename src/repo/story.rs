@@ -5,15 +5,15 @@ use uuid::Uuid;
 // Extend repo with queries related to stories.
 impl Repo {
     /// Select a story by id
-    pub async fn fetch_story(&self, id: Uuid) -> Result<Story> {
+    pub async fn fetch_story(&self, story_id: Uuid) -> Result<Story> {
         let query = sqlx::query_as!(
             Story,
             "SELECT id, name, seqno, created_at, updated_at FROM stories WHERE id = $1",
-            id
+            story_id
         );
         match query.fetch_optional(self.db_ref()).await? {
             Some(story) => Ok(story),
-            None => Err(Error::not_found(format!("story not found: {id}"))),
+            None => Err(Error::not_found(format!("story not found: {story_id}"))),
         }
     }
 
@@ -22,7 +22,7 @@ impl Repo {
         let query = sqlx::query_as!(
             Story,
             r#"SELECT id, name, seqno, created_at, updated_at FROM stories WHERE seqno >= $1
-            ORDER BY seqno, created_at LIMIT $2"#,
+            ORDER BY seqno LIMIT $2"#,
             cursor,
             limit as i64,
         );
@@ -44,37 +44,37 @@ impl Repo {
     }
 
     /// Update story name
-    pub async fn update_story(&self, id: Uuid, name: String) -> Result<Story> {
+    pub async fn update_story(&self, story_id: Uuid, name: String) -> Result<Story> {
         let query = sqlx::query_as!(
             Story,
             r#"UPDATE stories SET name = $1, updated_at = now() WHERE id = $2
             RETURNING id, name, seqno, created_at, updated_at"#,
             name,
-            id
+            story_id
         );
         let story = query.fetch_one(self.db_ref()).await?;
         Ok(story)
     }
 
-    /// Delete a story, its files, and its tasks.
-    pub async fn delete_story(&self, id: Uuid) -> Result<u64> {
+    /// Delete a story, child files, and child tasks.
+    pub async fn delete_story(&self, story_id: Uuid) -> Result<()> {
         let mut tx = self.db.begin().await?;
 
-        sqlx::query!("DELETE FROM tasks WHERE story_id = $1", id)
+        sqlx::query!("DELETE FROM tasks WHERE story_id = $1", story_id)
             .execute(&mut *tx)
             .await?;
 
-        sqlx::query!("DELETE FROM story_files WHERE story_id = $1", id)
+        sqlx::query!("DELETE FROM story_files WHERE story_id = $1", story_id)
             .execute(&mut *tx)
             .await?;
 
-        let result = sqlx::query!("DELETE FROM stories WHERE id = $1", id)
+        sqlx::query!("DELETE FROM stories WHERE id = $1", story_id)
             .execute(&mut *tx)
             .await?;
 
         tx.commit().await?;
 
-        Ok(result.rows_affected())
+        Ok(())
     }
 }
 
@@ -113,8 +113,7 @@ mod tests {
         assert_eq!(story.name, "Books");
 
         // Delete the story
-        let rows = repo.delete_story(story.id).await.unwrap();
-        assert_eq!(rows, 1);
+        repo.delete_story(story.id).await.unwrap();
 
         // Assert story was deleted
         assert!(repo.fetch_story(story.id).await.is_err());
