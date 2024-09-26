@@ -1,4 +1,6 @@
 use crate::{
+    action::story::{CreateStory, DeleteStory, GetStories, GetStory, UpdateStory},
+    action::task::GetTasks,
     api::dto::{PageParams, PageToken, Stories, StoryRequest, TaskParams},
     api::Ctx,
     domain::{Status, Story, Task},
@@ -12,7 +14,6 @@ use axum::{
     routing::get,
     Json, Router,
 };
-use futures_util::TryFutureExt;
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -49,7 +50,7 @@ async fn get_story(
     Path(story_id): Path<Uuid>,
     State(ctx): State<Arc<Ctx>>,
 ) -> Result<impl IntoResponse> {
-    let story = ctx.repo.fetch_story(story_id).await?;
+    let story = GetStory::execute(ctx, story_id).await?;
     Ok(Json(story))
 }
 
@@ -83,7 +84,7 @@ async fn get_stories(
     tracing::debug!("params: {:?}", params);
     let q = params.unwrap_or_default();
     let cursor = PageToken::decode_or(&q.page_token, 1)?;
-    let (next_cursor, stories) = ctx.repo.list_stories(cursor, q.page_size()).await?;
+    let (next_cursor, stories) = GetStories::execute(ctx, cursor, q.page_size()).await?;
     let resp = Stories::new(PageToken::encode(next_cursor), stories);
     Ok(Json(resp))
 }
@@ -107,17 +108,8 @@ async fn get_tasks(
     Path(story_id): Path<Uuid>,
     State(ctx): State<Arc<Ctx>>,
 ) -> Result<impl IntoResponse> {
-    tracing::debug!("params: {:?}", params);
-    let q = params.unwrap_or_default();
-    let mut tasks = ctx
-        .repo
-        .fetch_story(story_id)
-        .and_then(|s| ctx.repo.list_tasks(s.id))
-        .await?;
-    if let Some(status) = q.status() {
-        let status = status.to_string();
-        tasks.retain(|t| t.status == status);
-    }
+    let status = params.unwrap_or_default().status();
+    let tasks = GetTasks::execute(ctx, story_id, status).await?;
     Ok(Json(tasks))
 }
 
@@ -137,7 +129,7 @@ async fn create_story(
     Json(req): Json<StoryRequest>,
 ) -> Result<impl IntoResponse> {
     let name = req.validate()?;
-    let story = ctx.repo.create_story(name).await?;
+    let story = CreateStory::execute(ctx, name).await?;
     Ok((StatusCode::CREATED, Json(story)))
 }
 
@@ -160,11 +152,7 @@ async fn update_story(
     Json(req): Json<StoryRequest>,
 ) -> Result<impl IntoResponse> {
     let name = req.validate()?;
-    let story = ctx
-        .repo
-        .fetch_story(story_id)
-        .and_then(|s| ctx.repo.update_story(s.id, name))
-        .await?;
+    let story = UpdateStory::execute(ctx, story_id, name).await?;
     Ok(Json(story))
 }
 
@@ -180,12 +168,7 @@ async fn update_story(
     tag = "Story"
 )]
 async fn delete_story(Path(story_id): Path<Uuid>, State(ctx): State<Arc<Ctx>>) -> StatusCode {
-    let result = ctx
-        .repo
-        .fetch_story(story_id)
-        .and_then(|s| ctx.repo.delete_story(s.id))
-        .await;
-    if let Err(err) = result {
+    if let Err(err) = DeleteStory::execute(ctx, story_id).await {
         return StatusCode::from(err);
     }
     StatusCode::NO_CONTENT

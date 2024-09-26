@@ -6,6 +6,9 @@
     clippy::wildcard_imports
 )]
 
+/// Business logic
+pub mod action;
+
 /// Restful API (http/json)
 pub mod api;
 

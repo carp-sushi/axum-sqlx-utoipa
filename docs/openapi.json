@@ -299,7 +299,7 @@
           "required": true
         },
         "responses": {
-          "200": {
+          "201": {
             "description": "A metadata array for the uploaded files",
             "content": {
               "application/json": {

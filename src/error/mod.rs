@@ -1,5 +1,4 @@
 use axum::extract::multipart::MultipartError;
-use serde::Serialize;
 
 // Http support for errors
 mod http;
@@ -7,8 +6,7 @@ mod http;
 pub use http::Errors;
 
 /// Project level error type
-#[derive(thiserror::Error, Debug, Serialize)]
-#[serde(rename_all = "snake_case")]
+#[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error("invalid arguments: {messages:?}")]
     InvalidArgs { messages: Vec<String> },

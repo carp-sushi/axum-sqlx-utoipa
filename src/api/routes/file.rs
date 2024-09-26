@@ -1,4 +1,10 @@
-use crate::{api::Ctx, domain::StoryFile, error::Errors, Error, Result};
+use crate::{
+    action::file::{AddFiles, DeleteFile, DownloadFile, GetFile, GetFiles},
+    api::Ctx,
+    domain::StoryFile,
+    error::Errors,
+    Result,
+};
 use axum::{
     extract::{Multipart, Path, State},
     http::StatusCode,
@@ -6,14 +12,9 @@ use axum::{
     routing::get,
     Json, Router,
 };
-use futures_util::TryFutureExt;
 use std::sync::Arc;
 use utoipa::ToSchema;
 use uuid::Uuid;
-
-// Defaults for file uploads
-const FILE: &str = "file.dat";
-const OCTET: &str = "application/octet-stream";
 
 // Just necessary for api docs
 #[derive(ToSchema)]
@@ -55,11 +56,7 @@ async fn get_files(
     Path(story_id): Path<Uuid>,
     State(ctx): State<Arc<Ctx>>,
 ) -> Result<impl IntoResponse> {
-    let files = ctx
-        .repo
-        .fetch_story(story_id)
-        .and_then(|s| ctx.repo.list_files(s.id))
-        .await?;
+    let files = GetFiles::execute(ctx, story_id).await?;
     Ok(Json(files))
 }
 
@@ -73,7 +70,7 @@ async fn get_files(
         content = FileUpload,
     ),
     responses(
-        (status = 200, description = "A metadata array for the uploaded files", body = [StoryFile]),
+        (status = 201, description = "A metadata array for the uploaded files", body = [StoryFile]),
         (status = 404, description = "The parent story was not found", body = Errors)
     ),
     tag = "File"
@@ -81,28 +78,10 @@ async fn get_files(
 async fn add_files(
     Path(story_id): Path<Uuid>,
     State(ctx): State<Arc<Ctx>>,
-    mut multipart: Multipart,
+    multipart: Multipart,
 ) -> Result<impl IntoResponse> {
-    ctx.repo.fetch_story(story_id).await?;
-    let mut files = Vec::new();
-    while let Some(field) = multipart.next_field().await? {
-        if field.name().unwrap_or_default() == "file" {
-            let file_name = field.file_name().unwrap_or(FILE).to_string();
-            let content_type = field.content_type().unwrap_or(OCTET).to_string();
-            let bytes = field.bytes().await?;
-            let storage_id = ctx.storage.write(&bytes).await?;
-            let size = bytes.len() as i64;
-            let file = ctx
-                .repo
-                .create_file(story_id, storage_id, file_name, size, content_type)
-                .await?;
-            files.push(file);
-        }
-    }
-    if files.is_empty() {
-        return Err(Error::invalid_args("no files uploaded"));
-    }
-    Ok(Json(files))
+    let files = AddFiles::execute(ctx, story_id, multipart).await?;
+    Ok((StatusCode::CREATED, Json(files)))
 }
 
 /// Download file contents.
@@ -123,17 +102,7 @@ async fn download_file(
     Path((story_id, file_id)): Path<(Uuid, Uuid)>,
     State(ctx): State<Arc<Ctx>>,
 ) -> Result<impl IntoResponse> {
-    let file = ctx
-        .repo
-        .fetch_story(story_id)
-        .and_then(|s| ctx.repo.fetch_file(s.id, file_id))
-        .await?;
-    let contents = ctx.storage.read(file.storage_id).await?;
-    let disposition = format!("attachment; filename=\"{}\"", file.name);
-    let headers = [
-        ("content-type", &file.content_type),
-        ("content-disposition", &disposition),
-    ];
+    let (headers, contents) = DownloadFile::execute(ctx, story_id, file_id).await?;
     Ok((headers, contents).into_response())
 }
 
@@ -155,11 +124,7 @@ async fn get_file(
     Path((story_id, file_id)): Path<(Uuid, Uuid)>,
     State(ctx): State<Arc<Ctx>>,
 ) -> Result<impl IntoResponse> {
-    let file = ctx
-        .repo
-        .fetch_story(story_id)
-        .and_then(|s| ctx.repo.fetch_file(s.id, file_id))
-        .await?;
+    let file = GetFile::execute(ctx, story_id, file_id).await?;
     Ok(Json(file))
 }
 
@@ -181,13 +146,7 @@ async fn delete_file(
     Path((story_id, file_id)): Path<(Uuid, Uuid)>,
     State(ctx): State<Arc<Ctx>>,
 ) -> StatusCode {
-    let result = ctx
-        .repo
-        .fetch_file(story_id, file_id)
-        .and_then(|file| ctx.repo.delete_file(file))
-        .and_then(|file| ctx.storage.delete(file.storage_id))
-        .await;
-    if let Err(err) = result {
+    if let Err(err) = DeleteFile::execute(ctx, story_id, file_id).await {
         return StatusCode::from(err);
     }
     StatusCode::NO_CONTENT
