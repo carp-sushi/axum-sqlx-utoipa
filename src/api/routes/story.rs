@@ -1,6 +1,6 @@
 use crate::{
     action::story::DeleteStory,
-    api::dto::{PageParams, PageToken, Stories, StoryRequest, TaskParams},
+    api::dto::{Page, PageParams, PageToken, StoryRequest, TaskParams},
     api::Ctx,
     domain::{Status, Story, Task},
     error::Errors,
@@ -21,7 +21,7 @@ use uuid::Uuid;
 #[derive(utoipa::OpenApi)]
 #[openapi(
     paths(get_story, get_stories, get_tasks, create_story, update_story, delete_story),
-    components(schemas(Errors, Status, Stories, Story, StoryRequest, Task)),
+    components(schemas(Errors, Page<Story>, Status, Story, StoryRequest, Task)),
     tags((name = "Story"))
 )]
 pub struct ApiDoc;
@@ -73,7 +73,7 @@ async fn get_story(
         )
     ),
     responses(
-        (status = 200, description = "A page of stories", body = Stories)
+        (status = 200, description = "A page of stories", body = Page<Story>)
     ),
     tag = "Story"
 )]
@@ -85,7 +85,7 @@ async fn get_stories(
     let cursor = PageToken::decode_or(&params.page_token, 1)?;
     let limit = params.page_size();
     let (next_cursor, stories) = ctx.repo.list_stories(cursor, limit).await?;
-    let resp = Stories::new(PageToken::encode(next_cursor), stories);
+    let resp = Page::new(PageToken::encode(next_cursor), stories);
     Ok(Json(resp))
 }
 

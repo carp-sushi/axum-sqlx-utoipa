@@ -1,5 +1,5 @@
-use crate::{domain::Story, Error, Result};
-use serde::{Deserialize, Serialize};
+use crate::{Error, Result};
+use serde::Deserialize;
 use std::fmt::Debug;
 use utoipa::ToSchema;
 
@@ -20,20 +20,5 @@ impl StoryRequest {
             return Err(Error::invalid_args("name: invalid length"));
         }
         Ok(name)
-    }
-}
-
-/// A page of stories
-#[derive(Debug, Serialize, ToSchema)]
-pub struct Stories {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    next_page: Option<String>,
-    stories: Vec<Story>,
-}
-
-impl Stories {
-    // Create a new page of stories
-    pub fn new(next_page: Option<String>, stories: Vec<Story>) -> Self {
-        Self { next_page, stories }
     }
 }

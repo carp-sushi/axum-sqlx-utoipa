@@ -51,7 +51,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Stories"
+                  "$ref": "#/components/schemas/Page_Story"
                 }
               }
             }
@@ -752,33 +752,56 @@
           }
         }
       },
+      "Page_Story": {
+        "type": "object",
+        "description": "A page of domain objects",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "name",
+                "created_at",
+                "updated_at"
+              ],
+              "properties": {
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "updated_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          },
+          "next_page": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
       "Status": {
         "type": "string",
         "enum": [
           "incomplete",
           "complete"
         ]
-      },
-      "Stories": {
-        "type": "object",
-        "description": "A page of stories",
-        "required": [
-          "stories"
-        ],
-        "properties": {
-          "next_page": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "stories": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Story"
-            }
-          }
-        }
       },
       "Story": {
         "type": "object",
