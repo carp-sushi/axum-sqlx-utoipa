@@ -9,7 +9,7 @@ path = "./src/openapi.rs"
 
 [dependencies]
 async-trait = "0.1"
-axum = { version = "0.7", default-features = false, features = [
+axum = { version = "0.8", default-features = false, features = [
     "json",
     "query",
     "http1",
@@ -24,8 +24,7 @@ chrono = { version = "0.4", features = ["serde"] }
 dotenvy = "0.15"
 futures-util = "0.3"
 mimalloc = { version = "0.1", default-features = false }
-num_cpus = "1.0"
-percent-encoding = "2"
+num_cpus = "1"
 serde = { version = "1.0", features = ["derive"] }
 sqlx = { version = "0.8", features = [
     "runtime-tokio-rustls",
@@ -34,20 +33,20 @@ sqlx = { version = "0.8", features = [
     "uuid",
     "chrono",
 ] }
-strum = "0.26"
-strum_macros = "0.26"
-thiserror = "1"
-tokio = { version = "1.40", features = ["macros", "rt-multi-thread"] }
-tower-http = { version = "0.5", features = ["limit", "trace"] }
+strum = "0.27"
+strum_macros = "0.27"
+thiserror = "2"
+tokio = { version = "1.44", features = ["macros", "rt-multi-thread"] }
+tower-http = { version = "0.6", features = ["limit", "trace"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
-utoipa = { version = "4.2", features = ["axum_extras", "chrono", "uuid"] }
-utoipa-swagger-ui = { version = "7.1", features = ["axum"] }
+utoipa = { version = "5", features = ["axum_extras", "chrono", "uuid"] }
+utoipa-swagger-ui = { version = "9", features = ["axum"] }
 uuid = { version = "1", features = ["serde", "v4"] }
 
 [dev-dependencies]
-testcontainers = "0.22"
-testcontainers-modules = { version = "0.10", features = ["postgres"] }
+testcontainers = "0.23"
+testcontainers-modules = { version = "0.11", features = ["postgres"] }
 
 [profile.release]
 codegen-units = 1

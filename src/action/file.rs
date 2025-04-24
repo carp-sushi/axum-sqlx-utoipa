@@ -73,6 +73,7 @@ impl DeleteFile {
             .and_then(|story| ctx.repo.fetch_file(story.id, file_id))
             .and_then(|file| ctx.repo.delete_file(file))
             .await?;
+
         // Try to delete the file from storage, but only log error on failure
         if let Err(err) = ctx.storage.delete(file.storage_id).await {
             tracing::error!(
@@ -81,32 +82,7 @@ impl DeleteFile {
                 err
             );
         }
+
         Ok(())
-    }
-}
-
-/// Fetch a file.
-pub struct GetFile;
-impl GetFile {
-    pub async fn execute(ctx: Arc<Ctx>, story_id: Uuid, file_id: Uuid) -> Result<StoryFile> {
-        let file = ctx
-            .repo
-            .fetch_story(story_id)
-            .and_then(|s| ctx.repo.fetch_file(s.id, file_id))
-            .await?;
-        Ok(file)
-    }
-}
-
-/// Fetch all files (metadata) for a story.
-pub struct GetFiles;
-impl GetFiles {
-    pub async fn execute(ctx: Arc<Ctx>, story_id: Uuid) -> Result<Vec<StoryFile>> {
-        let files = ctx
-            .repo
-            .fetch_story(story_id)
-            .and_then(|s| ctx.repo.list_files(s.id))
-            .await?;
-        Ok(files)
     }
 }

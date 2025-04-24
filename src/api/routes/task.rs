@@ -1,5 +1,4 @@
 use crate::{
-    action::task::{CreateTask, DeleteTask, GetTask, UpdateTask},
     api::dto::{CreateTaskRequest, UpdateTaskRequest},
     api::Ctx,
     domain::{Status, Task},
@@ -13,6 +12,7 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
+use futures_util::TryFutureExt;
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -30,7 +30,7 @@ pub struct ApiDoc;
 pub fn routes() -> Router<Arc<Ctx>> {
     Router::new()
         .route("/tasks", post(create_task))
-        .route("/tasks/:task_id", get(get_task).delete(delete_task).patch(update_task))
+        .route("/tasks/{task_id}", get(get_task).delete(delete_task).patch(update_task))
 }
 
 /// Get a task
@@ -45,7 +45,7 @@ pub fn routes() -> Router<Arc<Ctx>> {
     tag = "Task"
 )]
 async fn get_task(Path(task_id): Path<Uuid>, State(ctx): State<Arc<Ctx>>) -> Result<Json<Task>> {
-    let task = GetTask::execute(ctx, task_id).await?;
+    let task = ctx.repo.fetch_task(task_id).await?;
     Ok(Json(task))
 }
 
@@ -65,7 +65,11 @@ async fn create_task(
     Json(req): Json<CreateTaskRequest>,
 ) -> Result<impl IntoResponse> {
     let (story_id, name, status) = req.validate()?;
-    let task = CreateTask::execute(ctx, story_id, name, status).await?;
+    let task = ctx
+        .repo
+        .fetch_story(story_id)
+        .and_then(|s| ctx.repo.create_task(s.id, name, status))
+        .await?;
     Ok((StatusCode::CREATED, Json(task)))
 }
 
@@ -87,8 +91,21 @@ async fn update_task(
     State(ctx): State<Arc<Ctx>>,
     Json(req): Json<UpdateTaskRequest>,
 ) -> Result<Json<Task>> {
+    // Validate request
     let (name, status) = req.validate()?;
-    let task = UpdateTask::execute(ctx, task_id, name, status).await?;
+
+    // Update
+    let task = ctx
+        .repo
+        .fetch_task(task_id)
+        .and_then(|t| {
+            let status = status.unwrap_or(t.status());
+            let name = name.unwrap_or(t.name);
+            ctx.repo.update_task(task_id, name, status)
+        })
+        .await?;
+
+    // Send task as json
     Ok(Json(task))
 }
 
@@ -104,7 +121,12 @@ async fn update_task(
     tag = "Task"
 )]
 async fn delete_task(Path(task_id): Path<Uuid>, State(ctx): State<Arc<Ctx>>) -> StatusCode {
-    if let Err(err) = DeleteTask::execute(ctx, task_id).await {
+    let result = ctx
+        .repo
+        .fetch_task(task_id)
+        .and_then(|t| ctx.repo.delete_task(t.id))
+        .await;
+    if let Err(err) = result {
         return StatusCode::from(err);
     }
     StatusCode::NO_CONTENT

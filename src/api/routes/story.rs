@@ -1,6 +1,5 @@
 use crate::{
-    action::story::{CreateStory, DeleteStory, GetStories, GetStory, UpdateStory},
-    action::task::GetTasks,
+    action::story::DeleteStory,
     api::dto::{PageParams, PageToken, Stories, StoryRequest, TaskParams},
     api::Ctx,
     domain::{Status, Story, Task},
@@ -14,6 +13,7 @@ use axum::{
     routing::get,
     Json, Router,
 };
+use futures_util::TryFutureExt;
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -31,8 +31,8 @@ pub struct ApiDoc;
 pub fn routes() -> Router<Arc<Ctx>> {
     Router::new()
         .route("/stories", get(get_stories).post(create_story))
-        .route("/stories/:story_id", get(get_story).delete(delete_story).patch(update_story))
-        .route("/stories/:story_id/tasks", get(get_tasks))
+        .route("/stories/{story_id}", get(get_story).delete(delete_story).patch(update_story))
+        .route("/stories/{story_id}/tasks", get(get_tasks))
 }
 
 /// Get a story
@@ -50,7 +50,7 @@ async fn get_story(
     Path(story_id): Path<Uuid>,
     State(ctx): State<Arc<Ctx>>,
 ) -> Result<impl IntoResponse> {
-    let story = GetStory::execute(ctx, story_id).await?;
+    let story = ctx.repo.fetch_story(story_id).await?;
     Ok(Json(story))
 }
 
@@ -78,13 +78,13 @@ async fn get_story(
     tag = "Story"
 )]
 async fn get_stories(
-    params: Option<Query<PageParams>>,
+    params: Query<PageParams>,
     State(ctx): State<Arc<Ctx>>,
 ) -> Result<impl IntoResponse> {
     tracing::debug!("params: {:?}", params);
-    let q = params.unwrap_or_default();
-    let cursor = PageToken::decode_or(&q.page_token, 1)?;
-    let (next_cursor, stories) = GetStories::execute(ctx, cursor, q.page_size()).await?;
+    let cursor = PageToken::decode_or(&params.page_token, 1)?;
+    let limit = params.page_size();
+    let (next_cursor, stories) = ctx.repo.list_stories(cursor, limit).await?;
     let resp = Stories::new(PageToken::encode(next_cursor), stories);
     Ok(Json(resp))
 }
@@ -104,12 +104,19 @@ async fn get_stories(
     tag = "Story"
 )]
 async fn get_tasks(
-    params: Option<Query<TaskParams>>,
+    params: Query<TaskParams>,
     Path(story_id): Path<Uuid>,
     State(ctx): State<Arc<Ctx>>,
 ) -> Result<impl IntoResponse> {
-    let status = params.unwrap_or_default().status();
-    let tasks = GetTasks::execute(ctx, story_id, status).await?;
+    let status = params.status();
+    let mut tasks = ctx
+        .repo
+        .fetch_story(story_id)
+        .and_then(|s| ctx.repo.list_tasks(s.id))
+        .await?;
+    if let Some(status) = status {
+        tasks.retain(|t| t.status == status.to_string());
+    }
     Ok(Json(tasks))
 }
 
@@ -129,7 +136,7 @@ async fn create_story(
     Json(req): Json<StoryRequest>,
 ) -> Result<impl IntoResponse> {
     let name = req.validate()?;
-    let story = CreateStory::execute(ctx, name).await?;
+    let story = ctx.repo.create_story(name).await?;
     Ok((StatusCode::CREATED, Json(story)))
 }
 
@@ -152,7 +159,13 @@ async fn update_story(
     Json(req): Json<StoryRequest>,
 ) -> Result<impl IntoResponse> {
     let name = req.validate()?;
-    let story = UpdateStory::execute(ctx, story_id, name).await?;
+
+    let story = ctx
+        .repo
+        .fetch_story(story_id)
+        .and_then(|s| ctx.repo.update_story(s.id, name))
+        .await?;
+
     Ok(Json(story))
 }
 

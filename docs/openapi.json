@@ -1,5 +1,5 @@
 {
-  "openapi": "3.0.3",
+  "openapi": "3.1.0",
   "info": {
     "title": "sqlx-todos",
     "description": "",
@@ -23,9 +23,11 @@
             "description": "The number of stories per page",
             "required": false,
             "schema": {
-              "type": "integer",
+              "type": [
+                "integer",
+                "null"
+              ],
               "format": "int32",
-              "nullable": true,
               "maximum": 1000,
               "minimum": 10
             }
@@ -36,8 +38,10 @@
             "description": "The page cursor (next_page from response)",
             "required": false,
             "schema": {
-              "type": "string",
-              "nullable": true
+              "type": [
+                "string",
+                "null"
+              ]
             }
           }
         ],
@@ -485,8 +489,10 @@
             "description": "The task status filter",
             "required": false,
             "schema": {
-              "type": "string",
-              "nullable": true
+              "type": [
+                "string",
+                "null"
+              ]
             }
           }
         ],
@@ -704,8 +710,10 @@
             "type": "string"
           },
           "status": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "story_id": {
             "type": "string",
@@ -735,8 +743,12 @@
         ],
         "properties": {
           "file": {
-            "type": "string",
-            "format": "binary"
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
           }
         }
       },
@@ -755,8 +767,10 @@
         ],
         "properties": {
           "next_page": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "stories": {
             "type": "array",
@@ -889,12 +903,16 @@
         "description": "The PATCH body for updating tasks",
         "properties": {
           "name": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "status": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "string",
+              "null"
+            ]
           }
         }
       }

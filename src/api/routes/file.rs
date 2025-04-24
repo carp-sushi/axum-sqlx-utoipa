@@ -1,5 +1,5 @@
 use crate::{
-    action::file::{AddFiles, DeleteFile, DownloadFile, GetFile, GetFiles},
+    action::file::{AddFiles, DeleteFile, DownloadFile},
     api::Ctx,
     domain::StoryFile,
     error::Errors,
@@ -12,6 +12,7 @@ use axum::{
     routing::get,
     Json, Router,
 };
+use futures_util::TryFutureExt;
 use std::sync::Arc;
 use utoipa::ToSchema;
 use uuid::Uuid;
@@ -36,9 +37,9 @@ pub struct ApiDoc;
 #[rustfmt::skip]
 pub fn routes() -> Router<Arc<Ctx>> {
     Router::new()
-        .route("/stories/:story_id/files", get(get_files).post(add_files))
-        .route("/stories/:story_id/files/:file_id", get(get_file).delete(delete_file))
-        .route("/stories/:story_id/files/:file_id/contents", get(download_file))
+        .route("/stories/{story_id}/files", get(get_files).post(add_files))
+        .route("/stories/{story_id}/files/{file_id}", get(get_file).delete(delete_file))
+        .route("/stories/{story_id}/files/{file_id}/contents", get(download_file))
 }
 
 /// List files for a story.
@@ -56,7 +57,14 @@ async fn get_files(
     Path(story_id): Path<Uuid>,
     State(ctx): State<Arc<Ctx>>,
 ) -> Result<impl IntoResponse> {
-    let files = GetFiles::execute(ctx, story_id).await?;
+    // Ensure story exists, and gather file metadata.
+    let files = ctx
+        .repo
+        .fetch_story(story_id)
+        .and_then(|s| ctx.repo.list_files(s.id))
+        .await?;
+
+    // Return file metadata as json
     Ok(Json(files))
 }
 
@@ -124,7 +132,11 @@ async fn get_file(
     Path((story_id, file_id)): Path<(Uuid, Uuid)>,
     State(ctx): State<Arc<Ctx>>,
 ) -> Result<impl IntoResponse> {
-    let file = GetFile::execute(ctx, story_id, file_id).await?;
+    let file = ctx
+        .repo
+        .fetch_story(story_id)
+        .and_then(|s| ctx.repo.fetch_file(s.id, file_id))
+        .await?;
     Ok(Json(file))
 }
 

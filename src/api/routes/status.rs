@@ -7,5 +7,5 @@ pub fn routes() -> Router<Arc<Ctx>> {
     let handler = || async { "øk" };
     Router::new()
         .route("/status", get(handler))
-        .route("/status/*glob", get(handler))
+        .route("/status/{*glob}", get(handler))
 }
