@@ -1,5 +1,6 @@
 use crate::{
     action::file::{AddFiles, DeleteFile, DownloadFile},
+    api::dto::Page,
     api::Ctx,
     domain::StoryFile,
     error::Errors,
@@ -28,7 +29,7 @@ struct FileUpload {
 #[derive(utoipa::OpenApi)]
 #[openapi(
     paths(get_files, add_files, get_file, download_file, delete_file),
-    components(schemas(Errors, FileUpload, StoryFile)),
+    components(schemas(Errors, FileUpload, Page<StoryFile>, StoryFile)),
     tags((name = "File"))
 )]
 pub struct ApiDoc;
@@ -48,7 +49,7 @@ pub fn routes() -> Router<Arc<Ctx>> {
     path = "/stories/{story_id}/files",
     params(("story_id" = Uuid, Path, description = "The parent story id")),
     responses(
-        (status = 200, description = "A file metadata array for the story", body = [StoryFile]),
+        (status = 200, description = "A file metadata array for the story", body = Page<StoryFile>),
         (status = 404, description = "The parent story was not found", body = Errors)
     ),
     tag = "File"
@@ -57,15 +58,12 @@ async fn get_files(
     Path(story_id): Path<Uuid>,
     State(ctx): State<Arc<Ctx>>,
 ) -> Result<impl IntoResponse> {
-    // Ensure story exists, and gather file metadata.
     let files = ctx
         .repo
         .fetch_story(story_id)
         .and_then(|s| ctx.repo.list_files(s.id))
         .await?;
-
-    // Return file metadata as json
-    Ok(Json(files))
+    Ok(Json(Page::new(None, files)))
 }
 
 /// Add files to a story.

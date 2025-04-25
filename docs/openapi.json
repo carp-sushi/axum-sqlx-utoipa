@@ -254,10 +254,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/StoryFile"
-                  }
+                  "$ref": "#/components/schemas/Page_StoryFile"
                 }
               }
             }
@@ -502,10 +499,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Task"
-                  }
+                  "$ref": "#/components/schemas/Page_Task"
                 }
               }
             }
@@ -780,6 +774,122 @@
                 },
                 "name": {
                   "type": "string"
+                },
+                "updated_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          },
+          "next_page": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "Page_StoryFile": {
+        "type": "object",
+        "description": "A page of domain objects",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "story_id",
+                "storage_id",
+                "name",
+                "size",
+                "content_type",
+                "created_at",
+                "updated_at"
+              ],
+              "properties": {
+                "content_type": {
+                  "type": "string"
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "size": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "storage_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "story_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "updated_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          },
+          "next_page": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "Page_Task": {
+        "type": "object",
+        "description": "A page of domain objects",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "story_id",
+                "name",
+                "status",
+                "created_at",
+                "updated_at"
+              ],
+              "properties": {
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "story_id": {
+                  "type": "string",
+                  "format": "uuid"
                 },
                 "updated_at": {
                   "type": "string",

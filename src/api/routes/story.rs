@@ -21,7 +21,7 @@ use uuid::Uuid;
 #[derive(utoipa::OpenApi)]
 #[openapi(
     paths(get_story, get_stories, get_tasks, create_story, update_story, delete_story),
-    components(schemas(Errors, Page<Story>, Status, Story, StoryRequest, Task)),
+    components(schemas(Errors, Page<Story>, Page<Task>, Status, Story, StoryRequest, Task)),
     tags((name = "Story"))
 )]
 pub struct ApiDoc;
@@ -85,8 +85,8 @@ async fn get_stories(
     let cursor = PageToken::decode_or(&params.page_token, 1)?;
     let limit = params.page_size();
     let (next_cursor, stories) = ctx.repo.list_stories(cursor, limit).await?;
-    let resp = Page::new(PageToken::encode(next_cursor), stories);
-    Ok(Json(resp))
+    let next_page = PageToken::encode(next_cursor);
+    Ok(Json(Page::new(next_page, stories)))
 }
 
 /// Get tasks for a story
@@ -98,7 +98,7 @@ async fn get_stories(
         ("status" = Option<String>, Query, description = "The task status filter", nullable)
     ),
     responses(
-        (status = 200, description = "The tasks for the story", body = [Task]),
+        (status = 200, description = "The tasks for the story", body = Page<Task>),
         (status = 404, description = "The parent story was not found", body = Errors)
     ),
     tag = "Story"
@@ -117,7 +117,7 @@ async fn get_tasks(
     if let Some(status) = status {
         tasks.retain(|t| t.status == status.to_string());
     }
-    Ok(Json(tasks))
+    Ok(Json(Page::new(None, tasks)))
 }
 
 /// Create a new story
