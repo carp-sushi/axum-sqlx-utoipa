@@ -14,13 +14,13 @@ const MAX_PAGE_SIZE: i32 = 1000;
 
 /// A page of domain objects
 #[derive(Debug, Serialize, ToSchema)]
-pub struct Page<T: Serialize + ToSchema> {
+pub struct Page<T: Serialize> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub next_page: Option<String>,
     pub data: Vec<T>,
 }
 
-impl<T: Serialize + ToSchema> Page<T> {
+impl<T: Serialize> Page<T> {
     // Create a new page of domain objects
     pub fn new(next_page: Option<String>, data: Vec<T>) -> Self {
         Self { next_page, data }

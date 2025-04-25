@@ -83,7 +83,7 @@ mod tests {
     #[tokio::test]
     async fn integration_test() {
         // Set up postgres test container backed repo
-        let image = Postgres::default().with_tag("16-alpine");
+        let image = Postgres::default().with_tag("17-alpine");
         let container = image.start().await.unwrap();
         let pool = tests::setup_pg_pool(&container).await;
         let repo = Repo::new(pool);

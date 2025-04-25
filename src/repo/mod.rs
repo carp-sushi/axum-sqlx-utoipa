@@ -48,13 +48,12 @@ mod tests {
         );
 
         let pool = PgPoolOptions::new()
-            .max_connections(1)
+            .max_connections(4)
             .min_connections(1)
             .connect(&connection_string)
             .await
             .unwrap();
 
-        println!("Running migrations on test container: {connection_string}");
         let m = Migrator::new(Path::new("./migrations")).await.unwrap();
         m.run(&pool).await.unwrap();
 
