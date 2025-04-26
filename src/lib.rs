@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 #![deny(
     clippy::exit,
     clippy::print_stderr,
