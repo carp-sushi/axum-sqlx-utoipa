@@ -63,7 +63,7 @@ async fn get_files(
         .fetch_story(story_id)
         .and_then(|s| ctx.repo.list_files(s.id))
         .await?;
-    Ok(Json(Page::new(None, files)))
+    Ok(Json(Page::single(files)))
 }
 
 /// Add files to a story.

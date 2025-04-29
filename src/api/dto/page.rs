@@ -25,6 +25,11 @@ impl<T: Serialize> Page<T> {
     pub fn new(next_page: Option<String>, data: Vec<T>) -> Self {
         Self { next_page, data }
     }
+
+    // Create a single page of domain objects
+    pub fn single(data: Vec<T>) -> Self {
+        Page::new(None, data)
+    }
 }
 
 /// The query parameters for getting a page of domain objects from a list endpoint.

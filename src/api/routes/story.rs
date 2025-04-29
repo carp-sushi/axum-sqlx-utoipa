@@ -117,7 +117,7 @@ async fn get_tasks(
     if let Some(status) = status {
         tasks.retain(|t| t.status == status.to_string());
     }
-    Ok(Json(Page::new(None, tasks)))
+    Ok(Json(Page::single(tasks)))
 }
 
 /// Create a new story
@@ -159,13 +159,11 @@ async fn update_story(
     Json(req): Json<StoryRequest>,
 ) -> Result<impl IntoResponse> {
     let name = req.validate()?;
-
     let story = ctx
         .repo
         .fetch_story(story_id)
         .and_then(|s| ctx.repo.update_story(s.id, name))
         .await?;
-
     Ok(Json(story))
 }
 
