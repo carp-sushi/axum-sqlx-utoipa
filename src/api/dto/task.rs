@@ -89,19 +89,18 @@ impl UpdateTaskRequest {
     }
 }
 
+/// The query params for filtering tasks on status.
 #[derive(Debug, Deserialize, Default)]
 pub struct TaskParams {
     pub status: Option<String>,
 }
 
 impl TaskParams {
-    /// Parse status enum from param string
+    /// Extract a status enum to ensure only valid statuses can be used to filter tasks.
     pub fn status(&self) -> Option<Status> {
-        if let Some(s) = self.status.clone() {
-            if let Ok(status) = Status::from_str(&s) {
-                return Some(status);
-            }
+        match self.status.as_ref().map(|s| Status::from_str(s)) {
+            Some(Ok(status)) => Some(status),
+            _ => None,
         }
-        None
     }
 }

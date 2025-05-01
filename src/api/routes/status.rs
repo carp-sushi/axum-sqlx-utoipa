@@ -6,6 +6,8 @@ use std::sync::Arc;
 pub fn routes() -> Router<Arc<Ctx>> {
     let handler = || async { "øk" };
     Router::new()
+        .route("/health", get(handler))
+        .route("/health/{*glob}", get(handler))
         .route("/status", get(handler))
         .route("/status/{*glob}", get(handler))
 }
