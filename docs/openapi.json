@@ -28,8 +28,8 @@
                 "null"
               ],
               "format": "int32",
-              "maximum": 1000,
-              "minimum": 10
+              "maximum": 100,
+              "minimum": 5
             }
           },
           {

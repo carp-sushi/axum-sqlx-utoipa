@@ -10,7 +10,7 @@ const DEFAULT_PAGE_SIZE: i32 = 25;
 
 // Page size limits
 const MIN_PAGE_SIZE: i32 = 5;
-const MAX_PAGE_SIZE: i32 = 1000;
+const MAX_PAGE_SIZE: i32 = 100;
 
 /// A page of domain objects
 #[derive(Debug, Serialize, ToSchema)]

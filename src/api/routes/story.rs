@@ -61,8 +61,8 @@ async fn get_story(
     params(
         ("page_size" = Option<i32>,
             Query,
-            minimum = 10,
-            maximum = 1000,
+            minimum = 5,
+            maximum = 100,
             description = "The number of stories per page",
             nullable
         ),
@@ -109,11 +109,10 @@ async fn get_tasks(
     State(ctx): State<Arc<Ctx>>,
 ) -> Result<impl IntoResponse> {
     let status = params.status();
-    let mut tasks = ctx
-        .repo
-        .fetch_story(story_id)
-        .and_then(|s| ctx.repo.list_tasks(s.id))
-        .await?;
+    let mut tasks = ctx.repo.list_tasks(story_id).await?;
+    if tasks.is_empty() {
+        ctx.repo.fetch_story(story_id).await?;
+    }
     if let Some(status) = status {
         tasks.retain(|t| t.status == status.to_string());
     }
