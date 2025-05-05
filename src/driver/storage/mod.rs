@@ -1,6 +1,7 @@
 use crate::Result;
 
 pub mod fs;
+pub mod mem;
 
 /// Read, write, and delete binary objects.
 #[async_trait::async_trait]

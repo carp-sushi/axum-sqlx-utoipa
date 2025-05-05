@@ -37,9 +37,9 @@ impl Config {
             db_max_connections = s.parse().expect("DB_MAX_CONNECTIONS could not be parsed")
         }
         let db_url = env::var("DATABASE_URL").expect("DB_HOST not set");
-        let db_schema = env::var("DATABASE_SCHEMA").unwrap_or("public".to_owned());
+        let db_schema = env::var("DATABASE_SCHEMA").unwrap_or("public".to_string());
         let storage_type = env::var("STORAGE_TYPE").expect("STORAGE_TYPE not set");
-        let storage_bucket = env::var("STORAGE_BUCKET").expect("STORAGE_BUCKET not set");
+        let storage_bucket = env::var("STORAGE_BUCKET").unwrap_or(".storage".to_string());
 
         // Create config
         Self {

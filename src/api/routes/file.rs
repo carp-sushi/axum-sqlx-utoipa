@@ -20,8 +20,9 @@ use uuid::Uuid;
 
 // Just necessary for api docs
 #[derive(ToSchema)]
+#[allow(unused)]
 struct FileUpload {
-    #[allow(dead_code)]
+    #[schema(value_type = String, format = Binary)]
     file: Vec<u8>,
 }
 

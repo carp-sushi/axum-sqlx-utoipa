@@ -737,12 +737,8 @@
         ],
         "properties": {
           "file": {
-            "type": "array",
-            "items": {
-              "type": "integer",
-              "format": "int32",
-              "minimum": 0
-            }
+            "type": "string",
+            "format": "binary"
           }
         }
       },

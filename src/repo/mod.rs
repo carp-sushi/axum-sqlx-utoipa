@@ -6,7 +6,7 @@ mod file;
 mod story;
 mod task;
 
-/// Concrete database logic
+/// Database abstraction layer.
 pub struct Repo {
     db: Arc<PgPool>,
 }
