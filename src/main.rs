@@ -6,12 +6,10 @@ use sqlx::migrate::Migrator;
 use sqlx_todos::{
     api::{Api, Ctx},
     config::Config,
-    driver::storage::{fs::FileStorage, mem::MemoryStorage, Storage},
     repo::Repo,
 };
 use std::{error::Error, sync::Arc};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
-use uuid::Uuid;
 
 // Embed migrations into the server binary.
 pub static MIGRATOR: Migrator = sqlx::migrate!();
@@ -34,14 +32,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     MIGRATOR.run(&pool).await?;
 
     // Set up storage and repo
-
-    let storage: Box<dyn Storage<Uuid>> = if &config.storage_type == "file" {
-        tracing::debug!("Using file storage");
-        Box::new(FileStorage::new(config.storage_bucket.clone()))
-    } else {
-        tracing::debug!("Using memory storage");
-        Box::new(MemoryStorage::new())
-    };
+    let storage = config.load_storage();
     let repo = Arc::new(Repo::new(Arc::new(pool)));
 
     // Set up API

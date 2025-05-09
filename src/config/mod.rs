@@ -1,9 +1,7 @@
 use std::env;
 
-// DB related config
 mod database;
-
-// TCP related config
+mod storage;
 mod tcp;
 
 /// Configuration settings
