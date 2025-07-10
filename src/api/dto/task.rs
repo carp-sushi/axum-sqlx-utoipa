@@ -31,7 +31,7 @@ impl CreateTaskRequest {
         if let Some(s) = &self.status {
             match Status::from_str(s) {
                 Ok(parsed) => status = Some(parsed),
-                Err(err) => messages.push(format!("status: {}", err)),
+                Err(err) => messages.push(format!("status: {err}")),
             }
         }
 
@@ -76,7 +76,7 @@ impl UpdateTaskRequest {
         if let Some(s) = &self.status {
             match Status::from_str(s) {
                 Ok(parsed) => status = Some(parsed),
-                Err(err) => messages.push(format!("status: {}", err)),
+                Err(err) => messages.push(format!("status: {err}")),
             }
         }
 

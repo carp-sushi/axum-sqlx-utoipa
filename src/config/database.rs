@@ -11,7 +11,7 @@ impl Config {
             .after_connect(move |conn, _meta| {
                 let schema = Arc::clone(&schema);
                 Box::pin(async move {
-                    conn.execute(format!("SET search_path = '{}';", schema).as_ref())
+                    conn.execute(format!("SET search_path = '{schema}';").as_ref())
                         .await?;
                     Ok(())
                 })

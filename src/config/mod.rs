@@ -27,7 +27,7 @@ impl Config {
     pub fn load() -> Self {
         // http server settings
         let port = env::var("HTTP_SERVER_PORT").unwrap_or("8080".into());
-        let listen_addr = format!("0.0.0.0:{}", port);
+        let listen_addr = format!("0.0.0.0:{port}");
 
         // database settings
         let mut db_max_connections = num_cpus::get() as u32;

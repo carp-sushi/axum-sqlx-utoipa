@@ -58,7 +58,7 @@ impl Repo {
         );
         match query.fetch_optional(self.db_ref()).await? {
             Some(file) => Ok(file),
-            None => Err(Error::not_found(format!("file not found: {}", file_id))),
+            None => Err(Error::not_found(format!("file not found: {file_id}"))),
         }
     }
 
