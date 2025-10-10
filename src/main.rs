@@ -33,10 +33,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // Set up storage and repo
     let storage = config.load_storage();
-    let repo = Arc::new(Repo::new(Arc::new(pool)));
+    let repo = Repo::new(Arc::new(pool));
 
     // Set up API
-    let ctx = Ctx::new(Arc::new(storage), repo);
+    let ctx = Ctx::new(Arc::new(storage), Arc::new(repo));
     let service = Api::new(Arc::new(ctx)).mk_service();
 
     // Start server
