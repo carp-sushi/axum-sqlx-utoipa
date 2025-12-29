@@ -10,10 +10,11 @@ impl DeleteStory {
         ctx.repo.fetch_story(story_id).await?;
 
         // Gather all storage references
-        let mut storage_ids = Vec::new();
-        if let Ok(files) = ctx.repo.list_files(story_id).await {
-            storage_ids.extend(files.into_iter().map(|f| f.storage_id));
-        }
+        let storage_ids = if let Ok(files) = ctx.repo.list_files(story_id).await {
+            files.into_iter().map(|f| f.storage_id).collect()
+        } else {
+            vec![]
+        };
 
         // Delete story, tasks, and file metadata
         ctx.repo.delete_story(story_id).await?;

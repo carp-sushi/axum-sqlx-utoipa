@@ -12,6 +12,9 @@ const DEFAULT_PAGE_SIZE: i32 = 25;
 const MIN_PAGE_SIZE: i32 = 5;
 const MAX_PAGE_SIZE: i32 = 100;
 
+// Define a reasonable upper limit on page token age
+const PAGE_TOKEN_MAX_AGE: u64 = 3600; // 1hr
+
 /// A page of domain objects
 #[derive(Debug, Serialize, ToSchema)]
 pub struct Page<T: Serialize> {
@@ -79,6 +82,9 @@ impl PageToken {
             Some(token) => {
                 let bytes = URL_SAFE.decode(token)?;
                 let page_token: PageToken = borsh::from_slice(&bytes)?;
+                if now() - page_token.ts >= PAGE_TOKEN_MAX_AGE {
+                    return Err(Error::invalid_args("page token has expired"));
+                }
                 Ok(page_token.cursor)
             }
         }
@@ -118,7 +124,11 @@ mod tests {
         let expect = i64::MAX;
         let output = PageToken::decode_or(&None, expect).unwrap();
         assert_eq!(output, expect);
-        // Invalid defaults should produce an error
+    }
+
+    #[test]
+    fn decode_invalid_default() {
+        // Default should be > 0
         assert!(PageToken::decode_or(&None, 0).is_err());
         assert!(PageToken::decode_or(&None, -10).is_err());
     }
