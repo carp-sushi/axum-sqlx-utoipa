@@ -2,6 +2,9 @@
 name = "sqlx-todos"
 version = "0.1.0"
 edition = "2021"
+authors = ["David Pederson<105142707+carp-sushi@users.noreply.github.com>"]
+description = "A web-service that manages simplistic todo lists."
+license = "Unlicense"
 
 [[bin]]
 name = "openapi"
@@ -45,8 +48,8 @@ utoipa-swagger-ui = { version = "9", features = ["axum"] }
 uuid = { version = "1", features = ["serde", "v4"] }
 
 [dev-dependencies]
-testcontainers = "0.25.0"
-testcontainers-modules = { version = "0.13.0", features = ["postgres"] }
+testcontainers = "0.26.3"
+testcontainers-modules = { version = "0.14.0", features = ["postgres"] }
 
 [profile.release]
 codegen-units = 1

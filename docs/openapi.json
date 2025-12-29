@@ -2,9 +2,14 @@
   "openapi": "3.1.0",
   "info": {
     "title": "sqlx-todos",
-    "description": "",
+    "description": "A web-service that manages simplistic todo lists.",
+    "contact": {
+      "name": "David Pederson",
+      "email": "105142707+carp-sushi@users.noreply.github.com"
+    },
     "license": {
-      "name": ""
+      "name": "Unlicense",
+      "identifier": "Unlicense"
     },
     "version": "0.1.0"
   },
