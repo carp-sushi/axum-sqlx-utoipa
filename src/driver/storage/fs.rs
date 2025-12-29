@@ -1,9 +1,9 @@
 use super::Storage;
 use crate::{Error, Result};
-use std::{
+use std::path::{Path, MAIN_SEPARATOR_STR};
+use tokio::{
     fs::{self, File},
-    io::{Read, Write},
-    path::{Path, MAIN_SEPARATOR_STR},
+    io::AsyncWriteExt,
 };
 use uuid::Uuid;
 
@@ -36,9 +36,7 @@ impl FileStorage {
 impl Storage<Uuid> for FileStorage {
     /// Read bytes from file
     async fn read(&self, key: Uuid) -> Result<Vec<u8>> {
-        let mut f = File::open(self.path(key))?;
-        let mut bytes = Vec::new();
-        f.read_to_end(&mut bytes)?;
+        let bytes = fs::read(self.path(key)).await?;
         Ok(bytes)
     }
 
@@ -48,14 +46,43 @@ impl Storage<Uuid> for FileStorage {
             return Err(Error::invalid_args("empty file"));
         }
         let key = Uuid::new_v4();
-        let mut file = File::create(self.path(key))?;
-        file.write_all(bytes)?;
+        let mut file = File::create(self.path(key)).await?;
+        file.write_all(bytes).await?;
         Ok(key)
     }
 
     /// Delete bytes for a key
     async fn delete(&self, key: Uuid) -> Result<()> {
-        fs::remove_file(self.path(key))?;
+        fs::remove_file(self.path(key)).await?;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_fs_storage() {
+        // Create a temp root dir
+        let temp_dir = std::env::temp_dir().join(format!("fs_storage_test_{}", Uuid::new_v4()));
+        fs::create_dir_all(&temp_dir).await.unwrap();
+
+        // Storage type to test
+        let storage = FileStorage::new(temp_dir.to_str().unwrap().to_string());
+
+        // Write, read, then delete some binary data.
+        let data = b"You've got red on you";
+        let key = storage.write(data).await.unwrap();
+        let read_data = storage.read(key).await.unwrap();
+        assert_eq!(read_data, data);
+        storage.delete(key).await.unwrap();
+
+        // Verify file is deleted
+        let result = storage.read(key).await;
+        assert!(result.is_err());
+
+        // Cleanup
+        fs::remove_dir_all(&temp_dir).await.unwrap();
     }
 }
