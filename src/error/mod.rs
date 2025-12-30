@@ -18,17 +18,17 @@ pub enum Error {
 
 // Error helpers
 impl Error {
-    pub fn internal(message: String) -> Self {
-        Error::Internal { message }
+    pub fn internal(s: impl Into<String>) -> Self {
+        Error::Internal { message: s.into() }
     }
 
-    pub fn not_found(message: String) -> Self {
-        Error::NotFound { message }
+    pub fn not_found(s: impl Into<String>) -> Self {
+        Error::NotFound { message: s.into() }
     }
 
-    pub fn invalid_args(message: &str) -> Self {
+    pub fn invalid_args(s: impl Into<String>) -> Self {
         Error::InvalidArgs {
-            messages: vec![message.into()],
+            messages: vec![s.into()],
         }
     }
 }
@@ -47,6 +47,6 @@ impl From<std::io::Error> for Error {
 
 impl From<MultipartError> for Error {
     fn from(err: MultipartError) -> Self {
-        Error::invalid_args(&err.to_string())
+        Error::invalid_args(err.to_string())
     }
 }

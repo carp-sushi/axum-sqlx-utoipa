@@ -32,7 +32,7 @@ impl Storage<Uuid> for MemoryStorage {
                 return Ok(value.clone());
             }
         }
-        Err(Error::not_found("file not found".into()))
+        Err(Error::not_found("file not found"))
     }
 
     /// Write object to datastore and return an lookup key.
@@ -44,7 +44,7 @@ impl Storage<Uuid> for MemoryStorage {
         if let Ok(mut map) = self.datastore.write() {
             map.insert(key, bytes.to_vec());
         } else {
-            return Err(Error::internal("write lock fail".into()));
+            return Err(Error::internal("write lock fail"));
         }
         Ok(key)
     }
@@ -54,7 +54,7 @@ impl Storage<Uuid> for MemoryStorage {
         if let Ok(mut map) = self.datastore.write() {
             map.remove(&key);
         } else {
-            return Err(Error::internal("write lock fail".into()));
+            return Err(Error::internal("write lock fail"));
         }
         Ok(())
     }

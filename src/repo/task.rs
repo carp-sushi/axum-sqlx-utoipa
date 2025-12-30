@@ -37,13 +37,18 @@ impl Repo {
     }
 
     /// Insert a new task
-    pub async fn create_task(&self, story_id: Uuid, name: String, status: Status) -> Result<Task> {
+    pub async fn create_task(
+        &self,
+        story_id: Uuid,
+        name: impl Into<String>,
+        status: Status,
+    ) -> Result<Task> {
         let query = sqlx::query_as!(
             Task,
             r#"INSERT INTO tasks (story_id, name, status) VALUES ($1, $2, $3)
             RETURNING id, story_id, name, status, created_at, updated_at"#,
             story_id,
-            name,
+            name.into(),
             status.to_string(),
         );
         let task = query.fetch_one(self.db_ref()).await?;
@@ -51,12 +56,17 @@ impl Repo {
     }
 
     /// Update task name and status.
-    pub async fn update_task(&self, task_id: Uuid, name: String, status: Status) -> Result<Task> {
+    pub async fn update_task(
+        &self,
+        task_id: Uuid,
+        name: impl Into<String>,
+        status: Status,
+    ) -> Result<Task> {
         let query = sqlx::query_as!(
             Task,
             r#"UPDATE tasks SET name = $1, status = $2, updated_at = now() WHERE id = $3
             RETURNING id, story_id, name, status, created_at, updated_at"#,
-            name,
+            name.into(),
             status.to_string(),
             task_id,
         );
@@ -94,14 +104,12 @@ mod tests {
         let repo = Repo::new(Arc::clone(&pool));
 
         // Set up a story to put tasks under
-        let name = "Books To Read".to_string();
-        let story = repo.create_story(name.clone()).await.unwrap();
+        let story = repo.create_story("Books To Read").await.unwrap();
         let story_id = story.id;
 
         // Create task, ensuring status is incomplete
-        let status = Status::Incomplete;
         let task = repo
-            .create_task(story_id.clone(), "Suttree".to_string(), status)
+            .create_task(story_id, "Suttree", Status::Incomplete)
             .await
             .unwrap();
         assert_eq!(task.status, Status::Incomplete.to_string());

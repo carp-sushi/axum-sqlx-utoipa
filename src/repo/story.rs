@@ -32,24 +32,24 @@ impl Repo {
     }
 
     /// Insert a new story
-    pub async fn create_story(&self, name: String) -> Result<Story> {
+    pub async fn create_story(&self, name: impl Into<String>) -> Result<Story> {
         let query = sqlx::query_as!(
             Story,
             r#"INSERT INTO stories (name) VALUES ($1)
             RETURNING id, name, seqno, created_at, updated_at"#,
-            name
+            name.into()
         );
         let story = query.fetch_one(self.db_ref()).await?;
         Ok(story)
     }
 
     /// Update story name
-    pub async fn update_story(&self, story_id: Uuid, name: String) -> Result<Story> {
+    pub async fn update_story(&self, story_id: Uuid, name: impl Into<String>) -> Result<Story> {
         let query = sqlx::query_as!(
             Story,
             r#"UPDATE stories SET name = $1, updated_at = now() WHERE id = $2
             RETURNING id, name, seqno, created_at, updated_at"#,
-            name,
+            name.into(),
             story_id
         );
         let story = query.fetch_one(self.db_ref()).await?;
@@ -96,17 +96,15 @@ mod tests {
         let repo = Repo::new(pool);
 
         // Create story
-        let name = "Books To Read".to_string();
-        let story = repo.create_story(name.clone()).await.unwrap();
-        assert_eq!(name, story.name);
+        let story = repo.create_story("Books To Read").await.unwrap();
+        assert_eq!("Books To Read", story.name);
 
         // Query stories page
         let (_, stories) = repo.list_stories(1, 10).await.unwrap();
         assert_eq!(stories.len(), 1);
 
         // Update the name
-        let updated_name = "Books".to_string();
-        repo.update_story(story.id, updated_name).await.unwrap();
+        repo.update_story(story.id, "Books").await.unwrap();
 
         // Fetch and verify new name
         let story = repo.fetch_story(story.id).await.unwrap();
