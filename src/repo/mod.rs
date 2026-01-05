@@ -40,6 +40,9 @@ mod tests {
     use testcontainers::ContainerAsync as Container;
     use testcontainers_modules::postgres::Postgres;
 
+    /// The docker version tag to use for PostgreSQL test containers.
+    pub const PG_VERSION_TAG: &str = "17-alpine";
+
     /// Given a running Postgres container, set up a connection pool and run migrations.
     pub async fn setup_pg_pool(container: &Container<Postgres>) -> Arc<PgPool> {
         let connection_string = &format!(
@@ -48,7 +51,7 @@ mod tests {
         );
 
         let pool = PgPoolOptions::new()
-            .max_connections(4)
+            .max_connections(1)
             .min_connections(1)
             .connect(&connection_string)
             .await
