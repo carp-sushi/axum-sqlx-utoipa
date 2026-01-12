@@ -1,5 +1,5 @@
 use super::Storage;
-use crate::{Error, Result};
+use crate::{domain::StorageId, Error, Result};
 
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
@@ -24,11 +24,11 @@ impl MemoryStorage {
 }
 
 #[async_trait::async_trait]
-impl Storage<Uuid> for MemoryStorage {
+impl Storage<StorageId> for MemoryStorage {
     /// Read object for a key
-    async fn read(&self, key: Uuid) -> Result<Vec<u8>> {
+    async fn read(&self, StorageId(key): &StorageId) -> Result<Vec<u8>> {
         if let Ok(map) = self.datastore.read() {
-            if let Some(value) = map.get(&key) {
+            if let Some(value) = map.get(key) {
                 return Ok(value.clone());
             }
         }
@@ -36,7 +36,7 @@ impl Storage<Uuid> for MemoryStorage {
     }
 
     /// Write object to datastore and return an lookup key.
-    async fn write(&self, bytes: &[u8]) -> Result<Uuid> {
+    async fn write(&self, bytes: &[u8]) -> Result<StorageId> {
         if bytes.is_empty() {
             return Err(Error::invalid_args("empty file"));
         }
@@ -46,13 +46,13 @@ impl Storage<Uuid> for MemoryStorage {
         } else {
             return Err(Error::internal("write lock fail"));
         }
-        Ok(key)
+        Ok(StorageId(key))
     }
 
     /// Delete object for a key
-    async fn delete(&self, key: Uuid) -> Result<()> {
+    async fn delete(&self, StorageId(key): &StorageId) -> Result<()> {
         if let Ok(mut map) = self.datastore.write() {
-            map.remove(&key);
+            map.remove(key);
         } else {
             return Err(Error::internal("write lock fail"));
         }

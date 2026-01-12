@@ -2,7 +2,7 @@ use crate::{
     action::file::{AddFiles, DeleteFile, DownloadFile},
     api::dto::Page,
     api::Ctx,
-    domain::StoryFile,
+    domain::{StoryFile, StoryFileId, StoryId},
     error::Errors,
     Result,
 };
@@ -59,10 +59,11 @@ async fn get_files(
     Path(story_id): Path<Uuid>,
     State(ctx): State<Arc<Ctx>>,
 ) -> Result<impl IntoResponse> {
+    let story_id = StoryId(story_id);
     let files = ctx
         .repo
-        .fetch_story(story_id)
-        .and_then(|s| ctx.repo.list_files(s.id))
+        .fetch_story(&story_id)
+        .and_then(|_| ctx.repo.list_files(&story_id))
         .await?;
     Ok(Json(Page::single(files)))
 }
@@ -87,7 +88,7 @@ async fn add_files(
     State(ctx): State<Arc<Ctx>>,
     multipart: Multipart,
 ) -> Result<impl IntoResponse> {
-    let files = AddFiles::execute(ctx, story_id, multipart).await?;
+    let files = AddFiles::execute(ctx, &StoryId(story_id), multipart).await?;
     Ok((StatusCode::CREATED, Json(files)))
 }
 
@@ -109,7 +110,9 @@ async fn download_file(
     Path((story_id, file_id)): Path<(Uuid, Uuid)>,
     State(ctx): State<Arc<Ctx>>,
 ) -> Result<impl IntoResponse> {
-    let (headers, contents) = DownloadFile::execute(ctx, story_id, file_id).await?;
+    let story_id = StoryId(story_id);
+    let file_id = StoryFileId(file_id);
+    let (headers, contents) = DownloadFile::execute(ctx, &story_id, &file_id).await?;
     Ok((headers, contents).into_response())
 }
 
@@ -131,10 +134,12 @@ async fn get_file(
     Path((story_id, file_id)): Path<(Uuid, Uuid)>,
     State(ctx): State<Arc<Ctx>>,
 ) -> Result<impl IntoResponse> {
+    let story_id = StoryId(story_id);
+    let file_id = StoryFileId(file_id);
     let file = ctx
         .repo
-        .fetch_story(story_id)
-        .and_then(|s| ctx.repo.fetch_file(s.id, file_id))
+        .fetch_story(&story_id)
+        .and_then(|_| ctx.repo.fetch_file(&story_id, &file_id))
         .await?;
     Ok(Json(file))
 }
@@ -157,7 +162,9 @@ async fn delete_file(
     Path((story_id, file_id)): Path<(Uuid, Uuid)>,
     State(ctx): State<Arc<Ctx>>,
 ) -> StatusCode {
-    if let Err(err) = DeleteFile::execute(ctx, story_id, file_id).await {
+    let story_id = StoryId(story_id);
+    let file_id = StoryFileId(file_id);
+    if let Err(err) = DeleteFile::execute(ctx, &story_id, &file_id).await {
         return StatusCode::from(err);
     }
     StatusCode::NO_CONTENT

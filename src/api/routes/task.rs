@@ -1,7 +1,7 @@
 use crate::{
     api::dto::{CreateTaskRequest, UpdateTaskRequest},
     api::Ctx,
-    domain::{Status, Task},
+    domain::{Status, StoryId, Task, TaskId},
     error::Errors,
     Result,
 };
@@ -45,7 +45,7 @@ pub fn routes() -> Router<Arc<Ctx>> {
     tag = "Task"
 )]
 async fn get_task(Path(task_id): Path<Uuid>, State(ctx): State<Arc<Ctx>>) -> Result<Json<Task>> {
-    let task = ctx.repo.fetch_task(task_id).await?;
+    let task = ctx.repo.fetch_task(&TaskId(task_id)).await?;
     Ok(Json(task))
 }
 
@@ -65,10 +65,11 @@ async fn create_task(
     Json(req): Json<CreateTaskRequest>,
 ) -> Result<impl IntoResponse> {
     let (story_id, name, status) = req.validate()?;
+    let story_id = StoryId(story_id);
     let task = ctx
         .repo
-        .fetch_story(story_id)
-        .and_then(|s| ctx.repo.create_task(s.id, name, status))
+        .fetch_story(&story_id)
+        .and_then(|_| ctx.repo.create_task(&story_id, name, status))
         .await?;
     Ok((StatusCode::CREATED, Json(task)))
 }
@@ -95,13 +96,14 @@ async fn update_task(
     let (name, status) = req.validate()?;
 
     // Update
+    let task_id = TaskId(task_id);
     let task = ctx
         .repo
-        .fetch_task(task_id)
+        .fetch_task(&task_id)
         .and_then(|t| {
-            let status = status.unwrap_or(t.status());
+            let status = status.unwrap_or(t.status);
             let name = name.unwrap_or(t.name);
-            ctx.repo.update_task(task_id, name, status)
+            ctx.repo.update_task(&task_id, name, status)
         })
         .await?;
 
@@ -121,10 +123,11 @@ async fn update_task(
     tag = "Task"
 )]
 async fn delete_task(Path(task_id): Path<Uuid>, State(ctx): State<Arc<Ctx>>) -> StatusCode {
+    let task_id = TaskId(task_id);
     let result = ctx
         .repo
-        .fetch_task(task_id)
-        .and_then(|t| ctx.repo.delete_task(t.id))
+        .fetch_task(&task_id)
+        .and_then(|_| ctx.repo.delete_task(&task_id))
         .await;
     if let Err(err) = result {
         return StatusCode::from(err);

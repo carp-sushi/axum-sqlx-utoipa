@@ -1,16 +1,49 @@
 use super::Repo;
-use crate::{domain::StoryFile, Error, Result};
+use crate::{
+    domain::{StorageId, StoryFile, StoryFileId, StoryId},
+    Error, Result,
+};
+use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
 // Defines a reasonable limit on the max files per story.
 const MAX_FILES: i16 = 100;
 
+/// The task entity object - used for query validation against the database.
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+struct StoryFileEntity {
+    pub id: Uuid,
+    pub story_id: Uuid,
+    pub storage_id: Uuid,
+    pub name: String,
+    pub size: i64,
+    pub content_type: String,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+// The repo should map the entity to the domain object in public functions.
+impl From<StoryFileEntity> for StoryFile {
+    fn from(entity: StoryFileEntity) -> Self {
+        Self {
+            id: StoryFileId(entity.id),
+            story_id: StoryId(entity.story_id),
+            storage_id: StorageId(entity.storage_id),
+            name: entity.name,
+            size: entity.size,
+            content_type: entity.content_type,
+            created_at: entity.created_at,
+            updated_at: entity.updated_at,
+        }
+    }
+}
+
 impl Repo {
     /// Insert a new file metadata row.
     pub async fn create_file(
         &self,
-        story_id: Uuid,
-        storage_id: Uuid,
+        story_id: &StoryId,
+        storage_id: &StorageId,
         name: String,
         size: i64,
         content_type: String,
@@ -19,52 +52,52 @@ impl Repo {
             return Err(Error::invalid_args("file size must be > 0"));
         }
         let query = sqlx::query_as!(
-            StoryFile,
+            StoryFileEntity,
             r#"INSERT INTO story_files (story_id, storage_id, name, size, content_type)
             VALUES ($1, $2, $3, $4, $5)
             RETURNING id, story_id, storage_id, name, size, content_type, created_at, updated_at"#,
-            story_id,
-            storage_id,
+            story_id.0,
+            storage_id.0,
             name,
             size,
             content_type,
         );
-        let story_file = query.fetch_one(self.db_ref()).await?;
-        Ok(story_file)
+        let entity = query.fetch_one(self.db_ref()).await?;
+        Ok(StoryFile::from(entity))
     }
 
     /// List all files for a story.
-    pub async fn list_files(&self, story_id: Uuid) -> Result<Vec<StoryFile>> {
+    pub async fn list_files(&self, story_id: &StoryId) -> Result<Vec<StoryFile>> {
         let query = sqlx::query_as!(
-            StoryFile,
+            StoryFileEntity,
             r#"SELECT id, story_id, storage_id, name, size, content_type, created_at, updated_at
             FROM story_files WHERE story_id = $1
             ORDER BY created_at LIMIT $2"#,
-            story_id,
+            story_id.0,
             MAX_FILES as i64,
         );
         let story_files = query.fetch_all(self.db_ref()).await?;
-        Ok(story_files)
+        Ok(story_files.into_iter().map(StoryFile::from).collect())
     }
 
     /// Select a file by id and story id
-    pub async fn fetch_file(&self, story_id: Uuid, file_id: Uuid) -> Result<StoryFile> {
+    pub async fn fetch_file(&self, story_id: &StoryId, file_id: &StoryFileId) -> Result<StoryFile> {
         let query = sqlx::query_as!(
-            StoryFile,
+            StoryFileEntity,
             r#"SELECT id, story_id, storage_id, name, size, content_type, created_at, updated_at
             FROM story_files WHERE id = $1 AND story_id = $2"#,
-            file_id,
-            story_id,
+            file_id.0,
+            story_id.0,
         );
         match query.fetch_optional(self.db_ref()).await? {
-            Some(file) => Ok(file),
+            Some(entity) => Ok(StoryFile::from(entity)),
             None => Err(Error::not_found(format!("file not found: {file_id}"))),
         }
     }
 
     /// Delete a file
     pub async fn delete_file(&self, file: StoryFile) -> Result<StoryFile> {
-        sqlx::query!("DELETE FROM story_files WHERE id = $1", file.id)
+        sqlx::query!("DELETE FROM story_files WHERE id = $1", file.id.0)
             .execute(self.db_ref())
             .await?;
         Ok(file)
@@ -83,7 +116,7 @@ mod tests {
     #[tokio::test]
     async fn integration_test() {
         // Set up postgres test container backed repo
-        let image = Postgres::default().with_tag("17-alpine");
+        let image = Postgres::default().with_tag(tests::PG_VERSION_TAG);
         let container = image.start().await.unwrap();
         let pool = tests::setup_pg_pool(&container).await;
         let repo = Repo::new(pool);
@@ -94,32 +127,32 @@ mod tests {
         assert_eq!(name, story.name);
 
         // Test file metadata
-        let storage_id = Uuid::new_v4();
+        let storage_id: StorageId = StorageId(Uuid::new_v4());
         let name = "Sequence Diagrams.png".to_string();
         let size: i64 = 10420;
         let content_type = "image/png".to_string();
 
         // Add file
         let inserted = repo
-            .create_file(story.id, storage_id.clone(), name, size, content_type)
+            .create_file(&story.id, &storage_id, name, size, content_type)
             .await
             .unwrap();
 
         // Get file
-        let file = repo.fetch_file(story.id, inserted.id).await.unwrap();
+        let file = repo.fetch_file(&story.id, &inserted.id).await.unwrap();
         assert_eq!(file.storage_id, storage_id);
 
         // List files
-        let files = repo.list_files(story.id).await.unwrap();
+        let files = repo.list_files(&story.id).await.unwrap();
         assert_eq!(files.len(), 1);
         assert!(files.contains(&file));
 
         // Delete file
         repo.delete_file(file).await.unwrap();
-        let files = repo.list_files(story.id).await.unwrap();
+        let files = repo.list_files(&story.id).await.unwrap();
         assert!(files.is_empty());
 
         // Cleanup
-        repo.delete_story(story.id).await.unwrap();
+        repo.delete_story(&story.id).await.unwrap();
     }
 }

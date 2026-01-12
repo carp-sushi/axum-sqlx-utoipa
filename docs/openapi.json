@@ -770,8 +770,7 @@
                   "format": "date-time"
                 },
                 "id": {
-                  "type": "string",
-                  "format": "uuid"
+                  "$ref": "#/components/schemas/StoryId"
                 },
                 "name": {
                   "type": "string"
@@ -821,8 +820,7 @@
                   "format": "date-time"
                 },
                 "id": {
-                  "type": "string",
-                  "format": "uuid"
+                  "$ref": "#/components/schemas/StoryFileId"
                 },
                 "name": {
                   "type": "string"
@@ -832,12 +830,10 @@
                   "format": "int64"
                 },
                 "storage_id": {
-                  "type": "string",
-                  "format": "uuid"
+                  "$ref": "#/components/schemas/StorageId"
                 },
                 "story_id": {
-                  "type": "string",
-                  "format": "uuid"
+                  "$ref": "#/components/schemas/StoryId"
                 },
                 "updated_at": {
                   "type": "string",
@@ -879,18 +875,16 @@
                   "format": "date-time"
                 },
                 "id": {
-                  "type": "string",
-                  "format": "uuid"
+                  "$ref": "#/components/schemas/TaskId"
                 },
                 "name": {
                   "type": "string"
                 },
                 "status": {
-                  "type": "string"
+                  "$ref": "#/components/schemas/Status"
                 },
                 "story_id": {
-                  "type": "string",
-                  "format": "uuid"
+                  "$ref": "#/components/schemas/StoryId"
                 },
                 "updated_at": {
                   "type": "string",
@@ -914,6 +908,11 @@
           "complete"
         ]
       },
+      "StorageId": {
+        "type": "string",
+        "format": "uuid",
+        "description": "The newtype storage id."
+      },
       "Story": {
         "type": "object",
         "required": [
@@ -928,8 +927,7 @@
             "format": "date-time"
           },
           "id": {
-            "type": "string",
-            "format": "uuid"
+            "$ref": "#/components/schemas/StoryId"
           },
           "name": {
             "type": "string"
@@ -961,8 +959,7 @@
             "format": "date-time"
           },
           "id": {
-            "type": "string",
-            "format": "uuid"
+            "$ref": "#/components/schemas/StoryFileId"
           },
           "name": {
             "type": "string"
@@ -972,18 +969,26 @@
             "format": "int64"
           },
           "storage_id": {
-            "type": "string",
-            "format": "uuid"
+            "$ref": "#/components/schemas/StorageId"
           },
           "story_id": {
-            "type": "string",
-            "format": "uuid"
+            "$ref": "#/components/schemas/StoryId"
           },
           "updated_at": {
             "type": "string",
             "format": "date-time"
           }
         }
+      },
+      "StoryFileId": {
+        "type": "string",
+        "format": "uuid",
+        "description": "The newtype story file relation id."
+      },
+      "StoryId": {
+        "type": "string",
+        "format": "uuid",
+        "description": "The newtype story id."
       },
       "StoryRequest": {
         "type": "object",
@@ -1013,24 +1018,27 @@
             "format": "date-time"
           },
           "id": {
-            "type": "string",
-            "format": "uuid"
+            "$ref": "#/components/schemas/TaskId"
           },
           "name": {
             "type": "string"
           },
           "status": {
-            "type": "string"
+            "$ref": "#/components/schemas/Status"
           },
           "story_id": {
-            "type": "string",
-            "format": "uuid"
+            "$ref": "#/components/schemas/StoryId"
           },
           "updated_at": {
             "type": "string",
             "format": "date-time"
           }
         }
+      },
+      "TaskId": {
+        "type": "string",
+        "format": "uuid",
+        "description": "The newtype task id."
       },
       "UpdateTaskRequest": {
         "type": "object",

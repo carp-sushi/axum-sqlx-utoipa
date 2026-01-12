@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE stories SET name = $1, updated_at = now() WHERE id = $2\n            RETURNING id, name, seqno, created_at, updated_at",
+  "query": "UPDATE stories SET name = $1 WHERE id = $2\n            RETURNING id, name, seqno, created_at, updated_at",
   "describe": {
     "columns": [
       {
@@ -43,5 +43,5 @@
       false
     ]
   },
-  "hash": "cca4eec2cfbf8c0dd1f877322e62675a66592074b51852dd722c9eff1577eefb"
+  "hash": "56333df4cb281e88a40e215e95f9a72c2b7971ebc41e5acb09aba28efbe7c562"
 }

@@ -1,8 +1,11 @@
-use crate::{api::Ctx, domain::StoryFile, Error, Result};
+use crate::{
+    api::Ctx,
+    domain::{StoryFile, StoryFileId, StoryId},
+    Error, Result,
+};
 use axum::extract::Multipart;
 use futures_util::TryFutureExt;
 use std::sync::Arc;
-use uuid::Uuid;
 
 // Defaults for file uploads
 const FILE: &str = "file.dat";
@@ -13,7 +16,7 @@ pub struct AddFiles;
 impl AddFiles {
     pub async fn execute(
         ctx: Arc<Ctx>,
-        story_id: Uuid,
+        story_id: &StoryId,
         mut multipart: Multipart,
     ) -> Result<Vec<StoryFile>> {
         ctx.repo.fetch_story(story_id).await?;
@@ -27,7 +30,7 @@ impl AddFiles {
                 let size = bytes.len() as i64;
                 let file = ctx
                     .repo
-                    .create_file(story_id, storage_id, file_name, size, content_type)
+                    .create_file(story_id, &storage_id, file_name, size, content_type)
                     .await?;
                 files.push(file);
             }
@@ -44,15 +47,15 @@ pub struct DownloadFile;
 impl DownloadFile {
     pub async fn execute(
         ctx: Arc<Ctx>,
-        story_id: Uuid,
-        file_id: Uuid,
+        story_id: &StoryId,
+        file_id: &StoryFileId,
     ) -> Result<([(String, String); 2], Vec<u8>)> {
         let file = ctx
             .repo
             .fetch_story(story_id)
-            .and_then(|s| ctx.repo.fetch_file(s.id, file_id))
+            .and_then(|_| ctx.repo.fetch_file(story_id, file_id))
             .await?;
-        let contents = ctx.storage.read(file.storage_id).await?;
+        let contents = ctx.storage.read(&file.storage_id).await?;
         let disposition = format!("attachment; filename=\"{}\"", file.name);
         let headers = [
             ("content-type".into(), file.content_type),
@@ -65,17 +68,17 @@ impl DownloadFile {
 /// Delete file metadata, and purge contents from storage.
 pub struct DeleteFile;
 impl DeleteFile {
-    pub async fn execute(ctx: Arc<Ctx>, story_id: Uuid, file_id: Uuid) -> Result<()> {
+    pub async fn execute(ctx: Arc<Ctx>, story_id: &StoryId, file_id: &StoryFileId) -> Result<()> {
         // Delete file metadata
         let file = ctx
             .repo
             .fetch_story(story_id)
-            .and_then(|story| ctx.repo.fetch_file(story.id, file_id))
+            .and_then(|_| ctx.repo.fetch_file(story_id, file_id))
             .and_then(|file| ctx.repo.delete_file(file))
             .await?;
 
         // Try to delete the file from storage, but only log error on failure
-        if let Err(err) = ctx.storage.delete(file.storage_id).await {
+        if let Err(err) = ctx.storage.delete(&file.storage_id).await {
             tracing::error!(
                 "unable to delete file {} from storage: {}",
                 file.storage_id,

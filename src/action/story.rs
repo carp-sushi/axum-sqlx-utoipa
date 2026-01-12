@@ -1,11 +1,10 @@
-use crate::{api::Ctx, Result};
+use crate::{api::Ctx, domain::StoryId, Result};
 use std::sync::Arc;
-use uuid::Uuid;
 
 /// Delete a story
 pub struct DeleteStory;
 impl DeleteStory {
-    pub async fn execute(ctx: Arc<Ctx>, story_id: Uuid) -> Result<()> {
+    pub async fn execute(ctx: Arc<Ctx>, story_id: &StoryId) -> Result<()> {
         // Ensure story exists
         ctx.repo.fetch_story(story_id).await?;
 
@@ -22,7 +21,7 @@ impl DeleteStory {
         // Delete file contents from storage only after metadata deletion succeeds
         for storage_id in storage_ids {
             // Don't fail action, just log the error
-            if let Err(err) = ctx.storage.delete(storage_id).await {
+            if let Err(err) = ctx.storage.delete(&storage_id).await {
                 tracing::error!("unable to delete {} from storage: {}", storage_id, err);
             }
         }

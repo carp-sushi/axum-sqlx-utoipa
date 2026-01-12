@@ -2,7 +2,7 @@ use crate::{
     action::story::DeleteStory,
     api::dto::{Page, PageParams, PageToken, StoryRequest, TaskParams},
     api::Ctx,
-    domain::{Status, Story, Task},
+    domain::{Status, Story, StoryId, Task},
     error::Errors,
     Result,
 };
@@ -50,7 +50,7 @@ async fn get_story(
     Path(story_id): Path<Uuid>,
     State(ctx): State<Arc<Ctx>>,
 ) -> Result<impl IntoResponse> {
-    let story = ctx.repo.fetch_story(story_id).await?;
+    let story = ctx.repo.fetch_story(&StoryId(story_id)).await?;
     Ok(Json(story))
 }
 
@@ -108,13 +108,14 @@ async fn get_tasks(
     Path(story_id): Path<Uuid>,
     State(ctx): State<Arc<Ctx>>,
 ) -> Result<impl IntoResponse> {
+    let story_id = StoryId(story_id);
     let status = params.status();
-    let mut tasks = ctx.repo.list_tasks(story_id).await?;
+    let mut tasks = ctx.repo.list_tasks(&story_id).await?;
     if tasks.is_empty() {
-        ctx.repo.fetch_story(story_id).await?;
+        ctx.repo.fetch_story(&story_id).await?;
     }
     if let Some(status) = status {
-        tasks.retain(|t| t.status == status.to_string());
+        tasks.retain(|t| t.status == status);
     }
     Ok(Json(Page::single(tasks)))
 }
@@ -157,11 +158,12 @@ async fn update_story(
     State(ctx): State<Arc<Ctx>>,
     Json(req): Json<StoryRequest>,
 ) -> Result<impl IntoResponse> {
+    let story_id = StoryId(story_id);
     let name = req.validate()?;
     let story = ctx
         .repo
-        .fetch_story(story_id)
-        .and_then(|s| ctx.repo.update_story(s.id, name))
+        .fetch_story(&story_id)
+        .and_then(|_| ctx.repo.update_story(&story_id, name))
         .await?;
     Ok(Json(story))
 }
@@ -178,7 +180,8 @@ async fn update_story(
     tag = "Story"
 )]
 async fn delete_story(Path(story_id): Path<Uuid>, State(ctx): State<Arc<Ctx>>) -> StatusCode {
-    if let Err(err) = DeleteStory::execute(ctx, story_id).await {
+    let story_id = StoryId(story_id);
+    if let Err(err) = DeleteStory::execute(ctx, &story_id).await {
         return StatusCode::from(err);
     }
     StatusCode::NO_CONTENT

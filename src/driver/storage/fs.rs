@@ -1,5 +1,5 @@
 use super::Storage;
-use crate::{Error, Result};
+use crate::{domain::StorageId, Error, Result};
 use std::path::{Path, MAIN_SEPARATOR_STR};
 use tokio::{
     fs::{self, File},
@@ -27,32 +27,32 @@ impl FileStorage {
     }
 
     /// Build file-system storage path for a key.
-    fn path(&self, file_name: Uuid) -> String {
+    fn path(&self, file_name: &Uuid) -> String {
         format!("{}{}{}", self.root_dir, MAIN_SEPARATOR_STR, file_name)
     }
 }
 
 #[async_trait::async_trait]
-impl Storage<Uuid> for FileStorage {
+impl Storage<StorageId> for FileStorage {
     /// Read bytes from file
-    async fn read(&self, key: Uuid) -> Result<Vec<u8>> {
+    async fn read(&self, StorageId(key): &StorageId) -> Result<Vec<u8>> {
         let bytes = fs::read(self.path(key)).await?;
         Ok(bytes)
     }
 
     /// Write bytes to file
-    async fn write(&self, bytes: &[u8]) -> Result<Uuid> {
+    async fn write(&self, bytes: &[u8]) -> Result<StorageId> {
         if bytes.is_empty() {
             return Err(Error::invalid_args("empty file"));
         }
         let key = Uuid::new_v4();
-        let mut file = File::create(self.path(key)).await?;
+        let mut file = File::create(self.path(&key)).await?;
         file.write_all(bytes).await?;
-        Ok(key)
+        Ok(StorageId(key))
     }
 
     /// Delete bytes for a key
-    async fn delete(&self, key: Uuid) -> Result<()> {
+    async fn delete(&self, StorageId(key): &StorageId) -> Result<()> {
         fs::remove_file(self.path(key)).await?;
         Ok(())
     }
@@ -74,12 +74,12 @@ mod tests {
         // Write, read, then delete some binary data.
         let data = b"You've got red on you";
         let key = storage.write(data).await.unwrap();
-        let read_data = storage.read(key).await.unwrap();
+        let read_data = storage.read(&key).await.unwrap();
         assert_eq!(read_data, data);
-        storage.delete(key).await.unwrap();
+        storage.delete(&key).await.unwrap();
 
         // Verify file is deleted
-        let result = storage.read(key).await;
+        let result = storage.read(&key).await;
         assert!(result.is_err());
 
         // Cleanup
