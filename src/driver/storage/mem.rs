@@ -1,5 +1,7 @@
-use super::Storage;
-use crate::{domain::StorageId, Error, Result};
+use crate::{
+    domain::{Storage, StorageId},
+    Error, Result,
+};
 
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
@@ -24,7 +26,7 @@ impl MemoryStorage {
 }
 
 #[async_trait::async_trait]
-impl Storage<StorageId> for MemoryStorage {
+impl Storage for MemoryStorage {
     /// Read object for a key
     async fn read(&self, StorageId(key): &StorageId) -> Result<Vec<u8>> {
         if let Ok(map) = self.datastore.read() {
@@ -57,5 +59,27 @@ impl Storage<StorageId> for MemoryStorage {
             return Err(Error::internal("write lock fail"));
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_mem_storage() {
+        // Storage type to test
+        let storage = MemoryStorage::new();
+
+        // Write, read, then delete some binary data.
+        let input = b"The quick brown fox jumped over the lazy dog";
+        let key = storage.write(input).await.unwrap();
+        let output = storage.read(&key).await.unwrap();
+        assert_eq!(output, input);
+        storage.delete(&key).await.unwrap();
+
+        // Verify file is deleted
+        let result = storage.read(&key).await;
+        assert!(result.is_err());
     }
 }

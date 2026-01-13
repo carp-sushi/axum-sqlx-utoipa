@@ -1,5 +1,7 @@
-use super::Storage;
-use crate::{domain::StorageId, Error, Result};
+use crate::{
+    domain::{Storage, StorageId},
+    Error, Result,
+};
 use std::path::{Path, MAIN_SEPARATOR_STR};
 use tokio::{
     fs::{self, File},
@@ -33,7 +35,7 @@ impl FileStorage {
 }
 
 #[async_trait::async_trait]
-impl Storage<StorageId> for FileStorage {
+impl Storage for FileStorage {
     /// Read bytes from file
     async fn read(&self, StorageId(key): &StorageId) -> Result<Vec<u8>> {
         let bytes = fs::read(self.path(key)).await?;
@@ -72,7 +74,7 @@ mod tests {
         let storage = FileStorage::new(temp_dir.to_str().unwrap().to_string());
 
         // Write, read, then delete some binary data.
-        let data = b"You've got red on you";
+        let data = b"The quick brown fox jumped over the lazy dog";
         let key = storage.write(data).await.unwrap();
         let read_data = storage.read(&key).await.unwrap();
         assert_eq!(read_data, data);
