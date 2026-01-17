@@ -26,8 +26,8 @@ impl AddFiles {
                 let file_name = field.file_name().unwrap_or(FILE).to_string();
                 let content_type = field.content_type().unwrap_or(OCTET).to_string();
                 let bytes = field.bytes().await?;
-                let storage_id = ctx.storage.write(&bytes).await?;
                 let size = bytes.len() as i64;
+                let storage_id = ctx.storage.write(bytes).await?;
                 let file = ctx
                     .repo
                     .create_file(story_id, &storage_id, file_name, size, content_type)
@@ -61,7 +61,7 @@ impl DownloadFile {
             ("content-type".into(), file.content_type),
             ("content-disposition".into(), disposition),
         ];
-        Ok((headers, contents))
+        Ok((headers, contents.to_vec()))
     }
 }
 

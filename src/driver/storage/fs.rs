@@ -2,6 +2,7 @@ use crate::{
     domain::{Storage, StorageId},
     Error, Result,
 };
+use bytes::Bytes;
 use std::path::{Path, MAIN_SEPARATOR_STR};
 use tokio::{
     fs::{self, File},
@@ -37,19 +38,19 @@ impl FileStorage {
 #[async_trait::async_trait]
 impl Storage for FileStorage {
     /// Read bytes from file
-    async fn read(&self, StorageId(key): &StorageId) -> Result<Vec<u8>> {
+    async fn read(&self, StorageId(key): &StorageId) -> Result<Bytes> {
         let bytes = fs::read(self.path(key)).await?;
-        Ok(bytes)
+        Ok(Bytes::from(bytes))
     }
 
     /// Write bytes to file
-    async fn write(&self, bytes: &[u8]) -> Result<StorageId> {
+    async fn write(&self, bytes: Bytes) -> Result<StorageId> {
         if bytes.is_empty() {
             return Err(Error::invalid_args("empty file"));
         }
         let key = Uuid::new_v4();
         let mut file = File::create(self.path(&key)).await?;
-        file.write_all(bytes).await?;
+        file.write_all(&bytes).await?;
         Ok(StorageId(key))
     }
 
@@ -74,8 +75,8 @@ mod tests {
         let storage = FileStorage::new(temp_dir.to_str().unwrap().to_string());
 
         // Write, read, then delete some binary data.
-        let data = b"The quick brown fox jumped over the lazy dog";
-        let key = storage.write(data).await.unwrap();
+        let data = Bytes::from("The quick brown fox jumped over the lazy dog");
+        let key = storage.write(data.clone()).await.unwrap();
         let read_data = storage.read(&key).await.unwrap();
         assert_eq!(read_data, data);
         storage.delete(&key).await.unwrap();

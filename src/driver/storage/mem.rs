@@ -3,6 +3,7 @@ use crate::{
     Error, Result,
 };
 
+use bytes::Bytes;
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 use uuid::Uuid;
@@ -10,7 +11,7 @@ use uuid::Uuid;
 /// In-memory binary object storage.
 /// NOTE: This only allows a number of readers or at most one writer at any point in time.
 /// For this reason, it is only useful for testing or running in local a dev environment.
-type DataStore = Arc<RwLock<HashMap<Uuid, Vec<u8>>>>;
+type DataStore = Arc<RwLock<HashMap<Uuid, Bytes>>>;
 
 /// Store binary objects in memory.
 #[derive(Default)]
@@ -28,23 +29,23 @@ impl MemoryStorage {
 #[async_trait::async_trait]
 impl Storage for MemoryStorage {
     /// Read object for a key
-    async fn read(&self, StorageId(key): &StorageId) -> Result<Vec<u8>> {
+    async fn read(&self, StorageId(key): &StorageId) -> Result<Bytes> {
         if let Ok(map) = self.datastore.read() {
             if let Some(value) = map.get(key) {
-                return Ok(value.clone());
+                return Ok(value.to_owned());
             }
         }
         Err(Error::not_found("file not found"))
     }
 
     /// Write object to datastore and return an lookup key.
-    async fn write(&self, bytes: &[u8]) -> Result<StorageId> {
+    async fn write(&self, bytes: Bytes) -> Result<StorageId> {
         if bytes.is_empty() {
             return Err(Error::invalid_args("empty file"));
         }
         let key = Uuid::new_v4();
         if let Ok(mut map) = self.datastore.write() {
-            map.insert(key, bytes.to_vec());
+            map.insert(key, bytes);
         } else {
             return Err(Error::internal("write lock fail"));
         }
@@ -72,8 +73,8 @@ mod tests {
         let storage = MemoryStorage::new();
 
         // Write, read, then delete some binary data.
-        let input = b"The quick brown fox jumped over the lazy dog";
-        let key = storage.write(input).await.unwrap();
+        let input = Bytes::from("The quick brown fox jumped over the lazy dog");
+        let key = storage.write(input.clone()).await.unwrap();
         let output = storage.read(&key).await.unwrap();
         assert_eq!(output, input);
         storage.delete(&key).await.unwrap();

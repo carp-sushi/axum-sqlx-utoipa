@@ -13,6 +13,9 @@ pub struct Config {
     pub db_schema: String,
     pub storage_type: String,
     pub storage_bucket: String,
+    pub storage_minio_base_url: Option<String>,
+    pub storage_minio_access_key: Option<String>,
+    pub storage_minio_secret_key: Option<String>,
 }
 
 /// Default for config just calls basic constructor
@@ -39,6 +42,11 @@ impl Config {
         let storage_type = env::var("STORAGE_TYPE").expect("STORAGE_TYPE not set");
         let storage_bucket = env::var("STORAGE_BUCKET").unwrap_or(".storage".to_string());
 
+        // Check for extra minio configs
+        let storage_minio_base_url = env::var("STORAGE_MINIO_BASE_URL").ok();
+        let storage_minio_access_key = env::var("STORAGE_MINIO_ACCESS_KEY").ok();
+        let storage_minio_secret_key = env::var("STORAGE_MINIO_SECRET_KEY").ok();
+
         // Create config
         Self {
             listen_addr,
@@ -47,6 +55,9 @@ impl Config {
             db_schema,
             storage_type,
             storage_bucket,
+            storage_minio_base_url,
+            storage_minio_access_key,
+            storage_minio_secret_key,
         }
     }
 }

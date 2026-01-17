@@ -1,4 +1,5 @@
 use crate::Result;
+use bytes::Bytes;
 use serde::Serialize;
 use utoipa::ToSchema;
 use uuid::Uuid;
@@ -18,10 +19,10 @@ impl std::fmt::Display for StorageId {
 #[async_trait::async_trait]
 pub trait Storage: Send + Sync {
     /// Read bytes
-    async fn read(&self, storage_id: &StorageId) -> Result<Vec<u8>>;
+    async fn read(&self, storage_id: &StorageId) -> Result<Bytes>;
 
     /// Write bytes
-    async fn write(&self, bytes: &[u8]) -> Result<StorageId>;
+    async fn write(&self, bytes: Bytes) -> Result<StorageId>;
 
     /// Delete bytes
     async fn delete(&self, storage_id: &StorageId) -> Result<()>;

@@ -23,10 +23,12 @@ axum = { version = "0.8", default-features = false, features = [
 base64 = "0.22"
 borsh = { version = "1", features = ["derive"] }
 borsh-derive = "1"
+bytes = "1.11"
 chrono = { version = "0.4", features = ["serde"] }
 dotenvy = "0.15"
 futures-util = "0.3"
 mimalloc = { version = "0.1", default-features = false }
+minio = "0.3"
 num_cpus = "1"
 serde = { version = "1.0", features = ["derive"] }
 sqlx = { version = "0.8", features = [
