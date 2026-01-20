@@ -15,7 +15,6 @@ use axum::{
 };
 use futures_util::TryFutureExt;
 use std::sync::Arc;
-use uuid::Uuid;
 
 /// OpenApi docs for story routes
 #[derive(utoipa::OpenApi)]
@@ -39,7 +38,7 @@ pub fn routes() -> Router<Arc<Ctx>> {
 #[utoipa::path(
     get,
     path = "/stories/{story_id}",
-    params(("story_id" = Uuid, Path, description = "The story id")),
+    params(("story_id" = StoryId, Path, description = "The story id")),
     responses(
         (status = 200, description = "The story", body = Story),
         (status = 404, description = "The story was not found", body = Errors)
@@ -47,10 +46,10 @@ pub fn routes() -> Router<Arc<Ctx>> {
     tag = "Story"
 )]
 async fn get_story(
-    Path(story_id): Path<Uuid>,
+    Path(story_id): Path<StoryId>,
     State(ctx): State<Arc<Ctx>>,
 ) -> Result<impl IntoResponse> {
-    let story = ctx.repo.fetch_story(&StoryId(story_id)).await?;
+    let story = ctx.repo.fetch_story(&story_id).await?;
     Ok(Json(story))
 }
 
@@ -94,7 +93,7 @@ async fn get_stories(
     get,
     path = "/stories/{story_id}/tasks",
     params(
-        ("story_id" = Uuid, Path, description = "The story id"),
+        ("story_id" = StoryId, Path, description = "The story id"),
         ("status" = Option<String>, Query, description = "The task status filter", nullable)
     ),
     responses(
@@ -105,10 +104,9 @@ async fn get_stories(
 )]
 async fn get_tasks(
     params: Query<TaskParams>,
-    Path(story_id): Path<Uuid>,
+    Path(story_id): Path<StoryId>,
     State(ctx): State<Arc<Ctx>>,
 ) -> Result<impl IntoResponse> {
-    let story_id = StoryId(story_id);
     let status = params.status();
     let mut tasks = ctx.repo.list_tasks(&story_id).await?;
     if tasks.is_empty() {
@@ -144,7 +142,7 @@ async fn create_story(
 #[utoipa::path(
     patch,
     path = "/stories/{story_id}",
-    params(("story_id" = Uuid, Path, description = "The story id")),
+    params(("story_id" = StoryId, Path, description = "The story id")),
     request_body = StoryRequest,
     responses(
         (status = 200, description = "The story was updated", body = Story),
@@ -154,11 +152,10 @@ async fn create_story(
     tag = "Story"
 )]
 async fn update_story(
-    Path(story_id): Path<Uuid>,
+    Path(story_id): Path<StoryId>,
     State(ctx): State<Arc<Ctx>>,
     Json(req): Json<StoryRequest>,
 ) -> Result<impl IntoResponse> {
-    let story_id = StoryId(story_id);
     let name = req.validate()?;
     let story = ctx
         .repo
@@ -179,8 +176,7 @@ async fn update_story(
     ),
     tag = "Story"
 )]
-async fn delete_story(Path(story_id): Path<Uuid>, State(ctx): State<Arc<Ctx>>) -> StatusCode {
-    let story_id = StoryId(story_id);
+async fn delete_story(Path(story_id): Path<StoryId>, State(ctx): State<Arc<Ctx>>) -> StatusCode {
     if let Err(err) = DeleteStory::execute(ctx, &story_id).await {
         return StatusCode::from(err);
     }

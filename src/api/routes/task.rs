@@ -1,7 +1,7 @@
 use crate::{
     api::dto::{CreateTaskRequest, UpdateTaskRequest},
     api::Ctx,
-    domain::{Status, StoryId, Task, TaskId},
+    domain::{Status, Task, TaskId},
     error::Errors,
     Result,
 };
@@ -14,7 +14,6 @@ use axum::{
 };
 use futures_util::TryFutureExt;
 use std::sync::Arc;
-use uuid::Uuid;
 
 /// OpenApi docs for story routes
 #[derive(utoipa::OpenApi)]
@@ -37,15 +36,15 @@ pub fn routes() -> Router<Arc<Ctx>> {
 #[utoipa::path(
     get,
     path = "/tasks/{task_id}",
-    params(("task_id" = Uuid, Path, description = "The task id")),
+    params(("task_id" = TaskId, Path, description = "The task id")),
     responses(
         (status = 200, description = "The task", body = Task),
         (status = 404, description = "The task was not found", body = Errors)
     ),
     tag = "Task"
 )]
-async fn get_task(Path(task_id): Path<Uuid>, State(ctx): State<Arc<Ctx>>) -> Result<Json<Task>> {
-    let task = ctx.repo.fetch_task(&TaskId(task_id)).await?;
+async fn get_task(Path(task_id): Path<TaskId>, State(ctx): State<Arc<Ctx>>) -> Result<Json<Task>> {
+    let task = ctx.repo.fetch_task(&task_id).await?;
     Ok(Json(task))
 }
 
@@ -65,7 +64,6 @@ async fn create_task(
     Json(req): Json<CreateTaskRequest>,
 ) -> Result<impl IntoResponse> {
     let (story_id, name, status) = req.validate()?;
-    let story_id = StoryId(story_id);
     let task = ctx
         .repo
         .fetch_story(&story_id)
@@ -78,7 +76,7 @@ async fn create_task(
 #[utoipa::path(
     patch,
     path = "/tasks/{task_id}",
-    params(("task_id" = Uuid, Path, description = "The task id")),
+    params(("task_id" = TaskId, Path, description = "The task id")),
     request_body = UpdateTaskRequest,
     responses(
         (status = 200, description = "The task was updated", body = Task),
@@ -88,7 +86,7 @@ async fn create_task(
     tag = "Task"
 )]
 async fn update_task(
-    Path(task_id): Path<Uuid>,
+    Path(task_id): Path<TaskId>,
     State(ctx): State<Arc<Ctx>>,
     Json(req): Json<UpdateTaskRequest>,
 ) -> Result<Json<Task>> {
@@ -96,7 +94,6 @@ async fn update_task(
     let (name, status) = req.validate()?;
 
     // Update
-    let task_id = TaskId(task_id);
     let task = ctx
         .repo
         .fetch_task(&task_id)
@@ -115,15 +112,14 @@ async fn update_task(
 #[utoipa::path(
     delete,
     path = "/tasks/{task_id}",
-    params(("task_id" = Uuid, Path, description = "The task id")),
+    params(("task_id" = TaskId, Path, description = "The task id")),
     responses(
         (status = 204, description = "The task was deleted"),
         (status = 404, description = "The task was not found")
     ),
     tag = "Task"
 )]
-async fn delete_task(Path(task_id): Path<Uuid>, State(ctx): State<Arc<Ctx>>) -> StatusCode {
-    let task_id = TaskId(task_id);
+async fn delete_task(Path(task_id): Path<TaskId>, State(ctx): State<Arc<Ctx>>) -> StatusCode {
     let result = ctx
         .repo
         .fetch_task(&task_id)

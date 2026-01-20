@@ -1,11 +1,11 @@
 use super::{Status, StoryId};
 use chrono::{DateTime, Utc};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
 /// The newtype task id.
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, ToSchema)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize, Serialize, ToSchema)]
 pub struct TaskId(pub Uuid);
 
 // Display the inner uuid.
@@ -15,7 +15,7 @@ impl std::fmt::Display for TaskId {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, ToSchema)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize, Serialize, ToSchema)]
 pub struct Task {
     pub id: TaskId,
     pub story_id: StoryId,

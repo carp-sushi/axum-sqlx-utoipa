@@ -1,9 +1,11 @@
-use crate::{domain::Status, Error, Result};
+use crate::{
+    domain::{Status, StoryId},
+    Error, Result,
+};
 use serde::Deserialize;
 use std::fmt::Debug;
 use std::str::FromStr;
 use utoipa::ToSchema;
-use uuid::Uuid;
 
 /// Limit name size in http request body.
 const MAX_NAME_LEN: usize = 100;
@@ -12,13 +14,13 @@ const MAX_NAME_LEN: usize = 100;
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct CreateTaskRequest {
     pub name: String,
-    pub story_id: Uuid,
+    pub story_id: StoryId,
     pub status: Option<String>,
 }
 
 impl CreateTaskRequest {
     /// Validate a task create request.
-    pub fn validate(&self) -> Result<(Uuid, String, Status)> {
+    pub fn validate(&self) -> Result<(StoryId, String, Status)> {
         // Collects error messages
         let mut messages = Vec::new();
 
@@ -40,7 +42,7 @@ impl CreateTaskRequest {
             return Err(Error::InvalidArgs { messages });
         }
 
-        Ok((self.story_id, name, status.unwrap_or_default()))
+        Ok((self.story_id.clone(), name, status.unwrap_or_default()))
     }
 }
 

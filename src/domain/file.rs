@@ -1,11 +1,11 @@
 use super::{StorageId, StoryId};
 use chrono::{DateTime, Utc};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
 /// The newtype story file relation id.
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, ToSchema)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize, Serialize, ToSchema)]
 pub struct StoryFileId(pub Uuid);
 
 // Display the inner uuid.
@@ -15,7 +15,7 @@ impl std::fmt::Display for StoryFileId {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, ToSchema)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize, Serialize, ToSchema)]
 pub struct StoryFile {
     pub id: StoryFileId,
     pub story_id: StoryId,

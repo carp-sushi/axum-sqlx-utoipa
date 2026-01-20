@@ -1,11 +1,11 @@
 use crate::Result;
 use bytes::Bytes;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
 /// The newtype storage id.
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, ToSchema)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize, Serialize, ToSchema)]
 pub struct StorageId(pub Uuid);
 
 // Display the inner uuid.

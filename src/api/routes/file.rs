@@ -16,7 +16,6 @@ use axum::{
 use futures_util::TryFutureExt;
 use std::sync::Arc;
 use utoipa::ToSchema;
-use uuid::Uuid;
 
 // Just necessary for api docs
 #[derive(ToSchema)]
@@ -48,7 +47,7 @@ pub fn routes() -> Router<Arc<Ctx>> {
 #[utoipa::path(
     get,
     path = "/stories/{story_id}/files",
-    params(("story_id" = Uuid, Path, description = "The parent story id")),
+    params(("story_id" = StoryId, Path, description = "The parent story id")),
     responses(
         (status = 200, description = "A file metadata array for the story", body = Page<StoryFile>),
         (status = 404, description = "The parent story was not found", body = Errors)
@@ -56,10 +55,9 @@ pub fn routes() -> Router<Arc<Ctx>> {
     tag = "File"
 )]
 async fn get_files(
-    Path(story_id): Path<Uuid>,
+    Path(story_id): Path<StoryId>,
     State(ctx): State<Arc<Ctx>>,
 ) -> Result<impl IntoResponse> {
-    let story_id = StoryId(story_id);
     let files = ctx
         .repo
         .fetch_story(&story_id)
@@ -72,7 +70,7 @@ async fn get_files(
 #[utoipa::path(
     post,
     path = "/stories/{story_id}/files",
-    params(("story_id" = Uuid, Path, description = "The parent story id")),
+    params(("story_id" = StoryId, Path, description = "The parent story id")),
     request_body(
         content_type = "multipart/form-data",
         content = FileUpload,
@@ -84,11 +82,11 @@ async fn get_files(
     tag = "File"
 )]
 async fn add_files(
-    Path(story_id): Path<Uuid>,
+    Path(story_id): Path<StoryId>,
     State(ctx): State<Arc<Ctx>>,
     multipart: Multipart,
 ) -> Result<impl IntoResponse> {
-    let files = AddFiles::execute(ctx, &StoryId(story_id), multipart).await?;
+    let files = AddFiles::execute(ctx, &story_id, multipart).await?;
     Ok((StatusCode::CREATED, Json(files)))
 }
 
@@ -97,8 +95,8 @@ async fn add_files(
     get,
     path = "/stories/{story_id}/files/{file_id}/contents",
     params(
-        ("story_id" = Uuid, Path, description = "The parent story id"),
-        ("file_id" = Uuid, Path, description = "The id of the file to download")
+        ("story_id" = StoryId, Path, description = "The parent story id"),
+        ("file_id" = StoryFileId, Path, description = "The id of the file to download")
     ),
     responses(
         (status = 200, description = "The contents of the file"),
@@ -107,11 +105,9 @@ async fn add_files(
     tag = "File"
 )]
 async fn download_file(
-    Path((story_id, file_id)): Path<(Uuid, Uuid)>,
+    Path((story_id, file_id)): Path<(StoryId, StoryFileId)>,
     State(ctx): State<Arc<Ctx>>,
 ) -> Result<impl IntoResponse> {
-    let story_id = StoryId(story_id);
-    let file_id = StoryFileId(file_id);
     let (headers, contents) = DownloadFile::execute(ctx, &story_id, &file_id).await?;
     Ok((headers, contents).into_response())
 }
@@ -121,8 +117,8 @@ async fn download_file(
     get,
     path = "/stories/{story_id}/files/{file_id}",
     params(
-        ("story_id" = Uuid, Path, description = "The parent story id"),
-        ("file_id" = Uuid, Path, description = "The id of the file metadata")
+        ("story_id" = StoryId, Path, description = "The parent story id"),
+        ("file_id" = StoryFileId, Path, description = "The id of the file metadata")
     ),
     responses(
         (status = 200, description = "The file metadata", body = StoryFile),
@@ -131,11 +127,9 @@ async fn download_file(
     tag = "File"
 )]
 async fn get_file(
-    Path((story_id, file_id)): Path<(Uuid, Uuid)>,
+    Path((story_id, file_id)): Path<(StoryId, StoryFileId)>,
     State(ctx): State<Arc<Ctx>>,
 ) -> Result<impl IntoResponse> {
-    let story_id = StoryId(story_id);
-    let file_id = StoryFileId(file_id);
     let file = ctx
         .repo
         .fetch_story(&story_id)
@@ -149,8 +143,8 @@ async fn get_file(
     delete,
     path = "/stories/{story_id}/files/{file_id}",
     params(
-        ("story_id" = Uuid, Path, description = "The parent story id"),
-        ("file_id" = Uuid, Path, description = "The id of the file to delete")
+        ("story_id" = StoryId, Path, description = "The parent story id"),
+        ("file_id" = StoryFileId, Path, description = "The id of the file to delete")
     ),
     responses(
         (status = 204, description = "The file was deleted successfully"),
@@ -159,11 +153,9 @@ async fn get_file(
     tag = "File"
 )]
 async fn delete_file(
-    Path((story_id, file_id)): Path<(Uuid, Uuid)>,
+    Path((story_id, file_id)): Path<(StoryId, StoryFileId)>,
     State(ctx): State<Arc<Ctx>>,
 ) -> StatusCode {
-    let story_id = StoryId(story_id);
-    let file_id = StoryFileId(file_id);
     if let Err(err) = DeleteFile::execute(ctx, &story_id, &file_id).await {
         return StatusCode::from(err);
     }

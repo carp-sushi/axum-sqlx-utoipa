@@ -1,9 +1,20 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumString};
 use utoipa::ToSchema;
 
 #[derive(
-    Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash, EnumString, Display, Serialize, ToSchema,
+    Debug,
+    Default,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    EnumString,
+    Display,
+    Deserialize,
+    Serialize,
+    ToSchema,
 )]
 #[strum(serialize_all = "snake_case")]
 #[serde(rename_all = "snake_case")]
