@@ -169,7 +169,7 @@ async fn update_story(
 #[utoipa::path(
     delete,
     path = "/stories/{story_id}",
-    params(("story_id" = Uuid, Path, description = "The story id")),
+    params(("story_id" = StoryId, Path, description = "The story id")),
     responses(
         (status = 204, description = "The story was deleted"),
         (status = 404, description = "The story was not found")
