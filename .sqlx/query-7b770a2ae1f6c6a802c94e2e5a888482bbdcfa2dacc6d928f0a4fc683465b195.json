@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM story_files WHERE story_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "7b770a2ae1f6c6a802c94e2e5a888482bbdcfa2dacc6d928f0a4fc683465b195"
+}

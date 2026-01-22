@@ -42,8 +42,8 @@ impl Repo {
     /// Insert a new file metadata row.
     pub async fn create_file(
         &self,
-        story_id: &StoryId,
-        storage_id: &StorageId,
+        &StoryId(story_id): &StoryId,
+        &StorageId(storage_id): &StorageId,
         name: String,
         size: i64,
         content_type: String,
@@ -56,8 +56,8 @@ impl Repo {
             r#"INSERT INTO story_files (story_id, storage_id, name, size, content_type)
             VALUES ($1, $2, $3, $4, $5)
             RETURNING id, story_id, storage_id, name, size, content_type, created_at, updated_at"#,
-            story_id.0,
-            storage_id.0,
+            story_id,
+            storage_id,
             name,
             size,
             content_type,
@@ -67,13 +67,13 @@ impl Repo {
     }
 
     /// List all files for a story.
-    pub async fn list_files(&self, story_id: &StoryId) -> Result<Vec<StoryFile>> {
+    pub async fn list_files(&self, &StoryId(story_id): &StoryId) -> Result<Vec<StoryFile>> {
         let query = sqlx::query_as!(
             StoryFileEntity,
             r#"SELECT id, story_id, storage_id, name, size, content_type, created_at, updated_at
             FROM story_files WHERE story_id = $1
             ORDER BY created_at LIMIT $2"#,
-            story_id.0,
+            story_id,
             MAX_FILES as i64,
         );
         let story_files = query.fetch_all(self.db_ref()).await?;
@@ -81,13 +81,17 @@ impl Repo {
     }
 
     /// Select a file by id and story id
-    pub async fn fetch_file(&self, story_id: &StoryId, file_id: &StoryFileId) -> Result<StoryFile> {
+    pub async fn fetch_file(
+        &self,
+        &StoryId(story_id): &StoryId,
+        &StoryFileId(file_id): &StoryFileId,
+    ) -> Result<StoryFile> {
         let query = sqlx::query_as!(
             StoryFileEntity,
             r#"SELECT id, story_id, storage_id, name, size, content_type, created_at, updated_at
             FROM story_files WHERE id = $1 AND story_id = $2"#,
-            file_id.0,
-            story_id.0,
+            file_id,
+            story_id,
         );
         match query.fetch_optional(self.db_ref()).await? {
             Some(entity) => Ok(StoryFile::from(entity)),
@@ -97,7 +101,8 @@ impl Repo {
 
     /// Delete a file
     pub async fn delete_file(&self, file: StoryFile) -> Result<StoryFile> {
-        sqlx::query!("DELETE FROM story_files WHERE id = $1", file.id.0)
+        let StoryFileId(file_id) = file.id;
+        sqlx::query!("DELETE FROM story_files WHERE id = $1", file_id)
             .execute(self.db_ref())
             .await?;
         Ok(file)

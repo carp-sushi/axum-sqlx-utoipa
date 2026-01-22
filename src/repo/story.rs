@@ -95,6 +95,10 @@ impl Repo {
             .execute(&mut *tx)
             .await?;
 
+        sqlx::query!("DELETE FROM story_files WHERE story_id = $1", story_id)
+            .execute(&mut *tx)
+            .await?;
+
         sqlx::query!("DELETE FROM stories WHERE id = $1", story_id)
             .execute(&mut *tx)
             .await?;
